@@ -3,11 +3,12 @@
 
 module Main where
 
+import qualified Data.Aeson.Casing        as AesonC
+import qualified Data.Aeson.Types         as Aeson
 import qualified Data.Text                as T
 import qualified Data.Text.IO             as TIO
 import qualified Network.Wreq             as Wreq
 import qualified Options.Applicative      as Opt
-import qualified Data.Aeson.Types as Aeson
 
 import           Control.Applicative      ((<**>))
 import           Control.Lens             ((^.))
@@ -39,17 +40,19 @@ disruptionUrl :: String
 disruptionUrl = "https://citymapper.com/api/1/routestatus?weekend=0"
 
 data RouteStatusResponse = RouteStatusResponse
-  { last_updated_time :: T.Text
-  , groupings         :: [RouteStatus]
+  { lastUpdatedTime :: T.Text
+  , groupings       :: [Route]
   } deriving (Show, Eq, Generic)
 
-instance Aeson.FromJSON RouteStatusResponse
+instance Aeson.FromJSON RouteStatusResponse where
+  parseJSON = Aeson.genericParseJSON $
+    Aeson.defaultOptions { Aeson.fieldLabelModifier = AesonC.snakeCase }
 
-data RouteStatus = RouteStatus
+data Route = Route
   { name :: T.Text
   } deriving (Show, Eq, Generic)
 
-instance Aeson.FromJSON RouteStatus
+instance Aeson.FromJSON Route
 
 main :: IO ()
 main = do

@@ -60,6 +60,7 @@ executables:
       - wreq
       - transformers
       - aeson
+      - aeson-casing
       - rethinkdb
       - data-default
     other-modules:
