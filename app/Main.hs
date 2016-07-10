@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Main where
 
@@ -41,18 +42,44 @@ disruptionUrl = "https://citymapper.com/api/1/routestatus?weekend=0"
 
 data RouteStatusResponse = RouteStatusResponse
   { lastUpdatedTime :: T.Text
-  , groupings       :: [Route]
+  , groupings       :: [Grouping]
   } deriving (Show, Eq, Generic)
 
 instance Aeson.FromJSON RouteStatusResponse where
   parseJSON = Aeson.genericParseJSON $
     Aeson.defaultOptions { Aeson.fieldLabelModifier = AesonC.snakeCase }
 
+data Grouping = Grouping
+  { name :: T.Text
+  , id :: T.Text
+  , routes :: Maybe [Route]
+  } deriving (Show, Eq, Generic)
+
+instance Aeson.FromJSON Grouping
+
 data Route = Route
   { name :: T.Text
+  , status :: RouteStatus
   } deriving (Show, Eq, Generic)
 
 instance Aeson.FromJSON Route
+
+data RouteStatus = RouteStatus
+  { summary :: T.Text
+  , description :: T.Text
+  , level :: Int
+  , disruptions :: [RouteDisruption]
+  } deriving (Show, Eq, Generic)
+
+instance Aeson.FromJSON RouteStatus
+
+data RouteDisruption = RouteDisruption
+  { summary :: T.Text
+  , stops :: Maybe [T.Text]
+  , level :: Int
+  } deriving (Show, Eq, Generic)
+
+instance Aeson.FromJSON RouteDisruption
 
 main :: IO ()
 main = do
