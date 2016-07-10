@@ -1,21 +1,26 @@
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DeriveAnyClass        #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module Main where
 
+import qualified Control.Lens.TH          as L
 import qualified Data.Aeson.Casing        as AesonC
 import qualified Data.Aeson.Types         as Aeson
 import qualified Data.Text                as T
 import qualified Data.Text.IO             as TIO
+import qualified Database.RethinkDB       as R
+import qualified GHC.Generics             as Generics
 import qualified Network.Wreq             as Wreq
 import qualified Options.Applicative      as Opt
 
 import           Control.Applicative      ((<**>))
-import           Control.Lens             ((^.))
+import           Control.Lens             (( # ), (^.))
+import           Control.Monad            (forM_, void)
 import           Data.Monoid              ((<>))
 import           Data.Version             (Version (), showVersion)
-import           GHC.Generics             (Generic)
 import           Paths_disruption_tracker (version)
 import           System.Environment       (getProgName)
 
@@ -40,46 +45,89 @@ cliParser progName ver =
 disruptionUrl :: String
 disruptionUrl = "https://citymapper.com/api/1/routestatus?weekend=0"
 
-data RouteStatusResponse = RouteStatusResponse
-  { lastUpdatedTime :: T.Text
-  , groupings       :: [Grouping]
-  } deriving (Show, Eq, Generic)
+aesonOptions :: Aeson.Options
+aesonOptions = Aeson.defaultOptions { Aeson.fieldLabelModifier = AesonC.snakeCase . drop 1 }
 
-instance Aeson.FromJSON RouteStatusResponse where
-  parseJSON = Aeson.genericParseJSON $
-    Aeson.defaultOptions { Aeson.fieldLabelModifier = AesonC.snakeCase }
+genericParse
+  :: (Generics.Generic a, Aeson.GFromJSON (Generics.Rep a))
+  => Aeson.Value
+  -> Aeson.Parser a
+genericParse = Aeson.genericParseJSON aesonOptions
 
-data Grouping = Grouping
-  { name :: T.Text
-  , id :: T.Text
-  , routes :: Maybe [Route]
-  } deriving (Show, Eq, Generic)
-
-instance Aeson.FromJSON Grouping
-
-data Route = Route
-  { name :: T.Text
-  , status :: RouteStatus
-  } deriving (Show, Eq, Generic)
-
-instance Aeson.FromJSON Route
-
-data RouteStatus = RouteStatus
-  { summary :: T.Text
-  , description :: T.Text
-  , level :: Int
-  , disruptions :: [RouteDisruption]
-  } deriving (Show, Eq, Generic)
-
-instance Aeson.FromJSON RouteStatus
+genericToEncoding
+  :: (Generics.Generic a, Aeson.GToEncoding (Generics.Rep a))
+  => a
+  -> Aeson.Encoding
+genericToEncoding = Aeson.genericToEncoding aesonOptions
 
 data RouteDisruption = RouteDisruption
-  { summary :: T.Text
-  , stops :: Maybe [T.Text]
-  , level :: Int
-  } deriving (Show, Eq, Generic)
+  { _disruptionSummary :: T.Text
+  , _stops   :: Maybe [T.Text]
+  , _disruptionLevel   :: Int
+  } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
 
-instance Aeson.FromJSON RouteDisruption
+instance Aeson.FromJSON RouteDisruption where
+  parseJSON = genericParse
+
+instance Aeson.ToJSON RouteDisruption where
+  toEncoding = genericToEncoding
+
+$(L.makeLenses ''RouteDisruption)
+
+data RouteStatus = RouteStatus
+  { _statusSummary :: T.Text
+  , _description :: T.Text
+  , _statusLevel :: Int
+  , _disruptions :: [RouteDisruption]
+  } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
+
+instance Aeson.FromJSON RouteStatus where
+  parseJSON = genericParse
+
+instance Aeson.ToJSON RouteStatus where
+  toEncoding = genericToEncoding
+
+$(L.makeLenses ''RouteStatus)
+
+data Route = Route
+  { _name   :: T.Text
+  , _status :: RouteStatus
+  } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
+
+instance Aeson.FromJSON Route where
+  parseJSON = genericParse
+
+instance Aeson.ToJSON Route where
+  toEncoding = genericToEncoding
+
+$(L.makeLenses ''Route)
+
+data Grouping = Grouping
+  { _groupingName   :: T.Text
+  , _id     :: T.Text
+  , _routes :: Maybe [Route]
+  } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
+
+instance Aeson.FromJSON Grouping where
+  parseJSON = genericParse
+
+instance Aeson.ToJSON Grouping where
+  toEncoding = genericToEncoding
+
+$(L.makeLenses ''Grouping)
+
+data RouteStatusResponse = RouteStatusResponse
+  { _lastUpdatedTime :: T.Text
+  , _groupings       :: [Grouping]
+  } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
+
+instance Aeson.FromJSON RouteStatusResponse where
+  parseJSON = genericParse
+
+instance Aeson.ToJSON RouteStatusResponse where
+  toEncoding = genericToEncoding
+
+$(L.makeLenses ''RouteStatusResponse)
 
 main :: IO ()
 main = do
@@ -90,3 +138,12 @@ main = do
     run _ = do
       r <- Wreq.asJSON =<< Wreq.get disruptionUrl
       print (r ^. Wreq.responseBody :: RouteStatusResponse)
+
+disruptionsTable :: R.Table
+disruptionsTable = R.table "disruptions"
+
+writeRecord :: RouteStatus -> IO ()
+writeRecord s = do
+  h <- R.connect "localhost" 32772 Nothing
+  void . R.run' h $ R.tableCreate disruptionsTable
+  (void . R.run' h) $ R.insert s disruptionsTable
