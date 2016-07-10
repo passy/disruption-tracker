@@ -59,6 +59,8 @@ executables:
       - lens
       - wreq
       - transformers
+      - aeson
+      - rethinkdb
       - data-default
     other-modules:
       - Paths_disruption_tracker
