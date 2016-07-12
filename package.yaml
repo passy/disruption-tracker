@@ -37,6 +37,7 @@ library:
     - data-default
   exposed-modules:
     - Lib
+    - Citymapper.Types
 
 tests:
   spec:

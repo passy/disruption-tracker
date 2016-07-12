@@ -3,6 +3,7 @@
 module Main where
 
 import Lib
+import Citymapper.Types
 import qualified Options.Applicative      as Opt
 import qualified Data.Aeson.Types         as Aeson
 
