@@ -30,8 +30,8 @@ main = hspec $ do
     describe "JSON Parsing" $ do
       it "parses a response" $ do
         resp <- readFixture "routestatus.json"
-        let _ = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
-        TIO.putStrLn "wat"
+        let s = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
+        TIO.putStrLn $ show s
 
       it "serializes to JSON" $ do
         let d = Lib.RouteDisruption { Lib._disruptionSummary = "Something bad"

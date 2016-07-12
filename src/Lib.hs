@@ -129,11 +129,11 @@ data RouteStatusResponse = RouteStatusResponse
   } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
 
 instance Aeson.FromJSON RouteStatusResponse where
-  parseJSON = genericParseJSON id
+  parseJSON = genericParseJSON defaultModifier
 
 instance Aeson.ToJSON RouteStatusResponse where
-  toEncoding = genericToEncoding id
-  toJSON = genericToJSON id
+  toEncoding = genericToEncoding defaultModifier
+  toJSON = genericToJSON defaultModifier
 
 $(L.makeLenses ''RouteStatusResponse)
 
