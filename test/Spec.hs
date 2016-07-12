@@ -16,8 +16,12 @@ import qualified Data.Text.IO           as TIO
 
 import           Control.Lens.Operators
 import           Test.Hspec
+import           Test.Hspec.Expectations.Lens (shouldView, through)
 
+import qualified Citymapper.Types       as Lib
 import qualified Lib                    as Lib
+
+
 
 readFixture :: FilePath -> IO BS.ByteString
 readFixture path = do
@@ -30,8 +34,8 @@ main = hspec $ do
     describe "JSON Parsing" $ do
       it "parses a response" $ do
         resp <- readFixture "routestatus.json"
-        let s = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
-        TIO.putStrLn $ show s
+        let res = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
+        res `shouldView` "2016-07-12T18:35:39+01:00" `through` Lib.lastUpdatedTime
 
       it "serializes to JSON" $ do
         let d = Lib.RouteDisruption { Lib._disruptionSummary = "Something bad"
