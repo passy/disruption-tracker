@@ -12,6 +12,10 @@ import qualified Data.Aeson.Types   as Aeson
 import qualified Data.Text          as T
 import qualified Database.RethinkDB as R
 import qualified GHC.Generics       as Generics
+import qualified Data.Hourglass     as Hourglass
+
+import Data.Aeson ((.:))
+import Control.Applicative ((<*>), empty)
 
 defaultModifier :: String -> String
 defaultModifier = AesonC.snakeCase . drop 1
@@ -124,7 +128,11 @@ data RouteStatusResponse = RouteStatusResponse
   } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
 
 instance Aeson.FromJSON RouteStatusResponse where
-  parseJSON = genericParseJSON defaultModifier
+  parseJSON (Aeson.Object v) =
+    RouteStatusResponse <$>
+    v .: "last_updated_time" <*>
+    v .: "groupings"
+  parseJSON _ = empty
 
 instance Aeson.ToJSON RouteStatusResponse where
   toEncoding = genericToEncoding defaultModifier

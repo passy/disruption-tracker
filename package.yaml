@@ -34,7 +34,7 @@ library:
     - aeson
     - aeson-casing
     - rethinkdb
-    - data-default
+    - hourglass
   exposed-modules:
     - Lib
     - Citymapper.Types
