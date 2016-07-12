@@ -28,8 +28,20 @@ main :: IO ()
 main = hspec $ do
   describe "Disruption Tracker" $ do
     describe "JSON Parsing" $ do
-
       it "parses a response" $ do
         resp <- readFixture "routestatus.json"
-        let res = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
-        print (res :: Lib.RouteStatusResponse)
+        let _ = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
+        TIO.putStrLn "wat"
+
+      it "serializes to JSON" $ do
+        let d = Lib.RouteDisruption { Lib._disruptionSummary = "Something bad"
+                                    , Lib._stops = Nothing
+                                    , Lib._disruptionLevel = 3
+                                    }
+        let s = Lib.RouteStatus { Lib._statusSummary = "It's down."
+                                , Lib._description   = "I mean, it's real bad."
+                                , Lib._statusLevel   = 3
+                                , Lib._disruptions   = [d]
+                                }
+        let str = Aeson.encode s
+        str `shouldBe` "{\"summary\":\"It's down.\",\"description\":\"I mean, it's real bad.\",\"level\":3,\"disruptions\":[{\"summary\":\"Something bad\",\"stops\":null,\"level\":3}]}"
