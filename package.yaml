@@ -25,8 +25,16 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
-    - lens
     - text
+    - optparse-applicative
+    - bytestring
+    - lens
+    - wreq
+    - transformers
+    - aeson
+    - aeson-casing
+    - rethinkdb
+    - data-default
   exposed-modules:
     - Lib
 
@@ -37,11 +45,13 @@ tests:
     ghc-options: -threaded -rtsopts -with-rtsopts=-N
     dependencies:
       - disruption-tracker
+      - aeson
+      - basic-prelude
+      - bytestring
+      - containers
+      - directory
       - hspec
       - lens
-      - directory
-      - filepath
-      - transformers
 
 executables:
   disruption-tracker:

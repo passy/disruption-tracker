@@ -26,8 +26,16 @@ library
   build-depends:
       base >= 4.7 && < 5
     , text
-    , lens
     , text
+    , optparse-applicative
+    , bytestring
+    , lens
+    , wreq
+    , transformers
+    , aeson
+    , aeson-casing
+    , rethinkdb
+    , data-default
   exposed-modules:
       Lib
   other-modules:
@@ -66,9 +74,11 @@ test-suite spec
       base >= 4.7 && < 5
     , text
     , disruption-tracker
+    , aeson
+    , basic-prelude
+    , bytestring
+    , containers
+    , directory
     , hspec
     , lens
-    , directory
-    , filepath
-    , transformers
   default-language: Haskell2010
