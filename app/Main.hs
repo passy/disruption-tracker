@@ -40,10 +40,15 @@ main = do
     run :: Options -> IO ()
     run _ = do
       resp <- Wreq.asJSON =<< Wreq.get Lib.disruptionUrl
+      -- Need to pack this as a tuple of line name + disruptions. Maybe ID?
       let routes = resp
                ^.. Wreq.responseBody
                  . C.groupings
                  . traverse
                  . C.routes
                  . _Just
+                 . traverse
+                 . C.status
+                 . C.disruptions
+                 . traverse
       print routes
