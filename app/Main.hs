@@ -2,14 +2,13 @@
 
 module Main where
 
-import Lib
-import Citymapper.Types
+import qualified Lib
+import qualified Citymapper.Types         as C
 import qualified Options.Applicative      as Opt
-import qualified Data.Aeson.Types         as Aeson
+import qualified Network.Wreq             as Wreq
 
 import           Control.Applicative      ((<**>))
-import           Control.Lens             (( # ), (^.))
-import           Control.Monad            (forM_, void)
+import           Control.Lens             ((^.), (^..), traverse, _Just)
 import           Data.Monoid              ((<>))
 import           Data.Version             (Version (), showVersion)
 import           Paths_disruption_tracker (version)
@@ -40,18 +39,11 @@ main = do
   where
     run :: Options -> IO ()
     run _ = do
-      -- r <- Wreq.asJSON =<< Wreq.get disruptionUrl
-      -- print (r ^. Wreq.responseBody :: RouteStatusResponse)
-
-      let d = RouteDisruption { _disruptionSummary = "Something bad"
-                              , _stops = Nothing
-                              , _disruptionLevel = 3
-                              }
-      let s = RouteStatus { _statusSummary = "It's down."
-                          , _description   = "I mean, it's real bad."
-                          , _statusLevel   = 3
-                          , _disruptions   = [d]
-                        }
-
-      -- writeRecord s
-      print $ Aeson.toJSON s
+      resp <- Wreq.asJSON =<< Wreq.get Lib.disruptionUrl
+      let routes = resp
+               ^.. Wreq.responseBody
+                 . C.groupings
+                 . traverse
+                 . C.routes
+                 . _Just
+      print routes
