@@ -6,16 +6,24 @@
 
 module Citymapper.Types where
 
-import qualified Control.Lens.TH    as L
-import qualified Data.Aeson.Casing  as AesonC
-import qualified Data.Aeson.Types   as Aeson
-import qualified Data.Text          as T
-import qualified Database.RethinkDB as R
-import qualified GHC.Generics       as Generics
-import qualified Data.Hourglass     as Hourglass
+import qualified Control.Lens.TH     as L
+import qualified Data.Aeson.Casing   as AesonC
+import qualified Data.Aeson.Types    as Aeson
+import qualified Data.Hourglass      as Hourglass
+import qualified Data.Text           as T
+import qualified Database.RethinkDB  as R
+import qualified GHC.Generics        as Generics
 
-import Data.Aeson ((.:))
-import Control.Applicative ((<*>), empty)
+import           Control.Applicative (empty, (<*>))
+import           Control.Monad       (MonadPlus (), mzero)
+import           Data.Aeson          ((.:))
+
+
+maybeParse :: MonadPlus m => (a -> Maybe b) -> m a -> m b
+maybeParse f = (maybe mzero return . f =<<)
+
+fromDateTimeStr :: MonadPlus m => m String -> m Hourglass.DateTime
+fromDateTimeStr = maybeParse (Hourglass.timeParse Hourglass.ISO8601_DateAndTime)
 
 defaultModifier :: String -> String
 defaultModifier = AesonC.snakeCase . drop 1
@@ -43,6 +51,18 @@ genericToJSON
   -> Aeson.Value
 genericToJSON modifier = Aeson.genericToJSON Aeson.defaultOptions
   { Aeson.fieldLabelModifier = modifier }
+
+newtype JSONDateTime = JSONDateTime Hourglass.DateTime
+  deriving (Show, Eq)
+
+instance Aeson.ToJSON JSONDateTime where
+  toJSON (JSONDateTime d) =
+    Aeson.String <$> T.pack $ Hourglass.timePrint Hourglass.ISO8601_DateAndTime d
+
+instance Aeson.FromJSON JSONDateTime where
+  parseJSON (Aeson.String s) =
+    JSONDateTime <$> fromDateTimeStr (pure $ T.unpack s)
+  parseJSON _ = error "Invalid JSONDateTime"
 
 data RouteDisruption = RouteDisruption
   { _disruptionSummary :: T.Text
@@ -123,15 +143,15 @@ instance Aeson.ToJSON Grouping where
 $(L.makeLenses ''Grouping)
 
 data RouteStatusResponse = RouteStatusResponse
-  { _lastUpdatedTime :: T.Text
+  { _lastUpdatedTime :: JSONDateTime
   , _groupings       :: [Grouping]
-  } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
+  } deriving (Show, Eq, Generics.Generic)
 
 instance Aeson.FromJSON RouteStatusResponse where
   parseJSON (Aeson.Object v) =
     RouteStatusResponse <$>
-    v .: "last_updated_time" <*>
-    v .: "groupings"
+      v .: "last_updated_time" <*>
+      v .: "groupings"
   parseJSON _ = empty
 
 instance Aeson.ToJSON RouteStatusResponse where

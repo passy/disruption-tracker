@@ -51,6 +51,7 @@ tests:
       - bytestring
       - containers
       - directory
+      - hourglass
       - hspec
       - hspec-expectations-lens
       - lens
