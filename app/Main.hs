@@ -8,7 +8,7 @@ import qualified Options.Applicative      as Opt
 import qualified Network.Wreq             as Wreq
 
 import           Control.Applicative      ((<**>))
-import           Control.Lens             ((^.), (^..), traverse, _Just)
+import           Control.Lens             ((^.), (^..), traverse, _Just, over, mapped)
 import           Data.Monoid              ((<>))
 import           Data.Version             (Version (), showVersion)
 import           Paths_disruption_tracker (version)
@@ -40,15 +40,14 @@ main = do
     run :: Options -> IO ()
     run _ = do
       resp <- Wreq.asJSON =<< Wreq.get Lib.disruptionUrl
-      -- Need to pack this as a tuple of line name + disruptions. Maybe ID?
-      let routes = resp
+      let routes :: [C.Route]
+          routes = resp
                ^.. Wreq.responseBody
                  . C.groupings
                  . traverse
                  . C.routes
                  . _Just
                  . traverse
-                 . C.status
-                 . C.disruptions
-                 . traverse
-      print routes
+      let extrDisruptions r = (r ^. C.routeName, r ^.. C.status . C.disruptions . traverse)
+      let disruptions = over mapped extrDisruptions routes
+      print disruptions
