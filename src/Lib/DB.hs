@@ -27,5 +27,5 @@ setup hostname port = do
 
 writeDisruptions :: DisruptionRow -> IO ()
 writeDisruptions s = do
-  h <- R.connect "192.168.99.100" 32772 Nothing
+  h <- R.connect "192.168.99.100" 32769 Nothing
   void . R.run' h $ R.insert s disruptionsTable
