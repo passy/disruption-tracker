@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Citymapper.Types where
+module Lib.Citymapper.Types where
 
 import qualified Control.Lens.TH     as L
 import qualified Data.Aeson.Casing   as AesonC

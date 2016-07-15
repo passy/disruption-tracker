@@ -37,7 +37,8 @@ library:
     - hourglass
   exposed-modules:
     - Lib
-    - Citymapper.Types
+    - Lib.Citymapper.Types
+    - Lib.DB
 
 tests:
   spec:
