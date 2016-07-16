@@ -13,6 +13,7 @@ import qualified Options.Applicative      as Opt
 import           Control.Applicative      ((<**>))
 import           Control.Lens             (mapped, over, traverse, (^.), (^..),
                                            _Just)
+import           Data.Default             (def)
 import           Data.Monoid              ((<>))
 import           Data.Version             (Version (), showVersion)
 import           Paths_disruption_tracker (version)
@@ -54,7 +55,9 @@ main = do
                  . traverse
       let extrDisruptions r = (r ^. C.routeName, r ^.. C.status . C.disruptions . traverse)
       let disruptions = over mapped extrDisruptions routes
-      sequence_ $ Lib.DB.writeDisruptions . toDisruptionsRow <$> disruptions
+      -- TODO: From CLI args, obvs
+      let host = Lib.DB.Host "192.168.99.100" 32769 def
+      sequence_ $ Lib.DB.writeDisruptions host . toDisruptionsRow <$> disruptions
 
     toDisruptionsRow :: (T.Text, [C.RouteDisruption]) -> Lib.DB.DisruptionRow
     toDisruptionsRow (name, disruptions) = Lib.DB.DisruptionRow { .. }
