@@ -1,28 +1,35 @@
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
 module Main where
 
 import qualified Data.Text                as T
+import qualified GHC.Generics             as Generics
 import qualified Lib
 import qualified Lib.Citymapper.Types     as C
 import qualified Lib.DB
 import qualified Network.Wreq             as Wreq
 import qualified Options.Applicative      as Opt
+import qualified Options.Generic
 
 import           Control.Applicative      ((<**>))
 import           Control.Lens             (mapped, over, traverse, (^.), (^..),
                                            _Just)
-import           Data.Default             (def)
 import           Data.Monoid              ((<>))
 import           Data.Version             (Version (), showVersion)
 import           Paths_disruption_tracker (version)
 import           System.Environment       (getProgName)
 
 data Options = Options
+  { optHostname :: T.Text
+  , optPort     :: Integer
+  , optPassword :: Maybe T.Text
+  } deriving (Generics.Generic, Show, Eq, Options.Generic.ParseRecord)
 
 options :: Opt.Parser Options
-options = pure Options
+options = Options.Generic.parseRecord
 
 cliParser :: String -> Version -> Opt.ParserInfo Options
 cliParser progName ver =
@@ -43,7 +50,7 @@ main = do
   Opt.execParser (cliParser progName version) >>= run
   where
     run :: Options -> IO ()
-    run _ = do
+    run opts = do
       resp <- Wreq.asJSON =<< Wreq.get (T.unpack Lib.disruptionUrl)
       let routes :: [C.Route]
           routes = resp
@@ -55,8 +62,7 @@ main = do
                  . traverse
       let extrDisruptions r = (r ^. C.routeName, r ^.. C.status . C.disruptions . traverse)
       let disruptions = over mapped extrDisruptions routes
-      -- TODO: From CLI args, obvs
-      let host = Lib.DB.Host "192.168.99.100" 32769 def
+      let host = Lib.DB.Host (optHostname opts) (optPort opts) (optPassword opts)
       sequence_ $ Lib.DB.writeDisruptions host . toDisruptionsRow <$> disruptions
 
     toDisruptionsRow :: (T.Text, [C.RouteDisruption]) -> Lib.DB.DisruptionRow
