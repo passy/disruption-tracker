@@ -3,22 +3,18 @@
 {-# LANGUAGE OverloadedStrings         #-}
 
 import           BasicPrelude
-import           System.Directory       (getCurrentDirectory)
 
-import           Control.Lens.At        (at)
-import           Control.Lens.Cons      (_head)
-import qualified Data.Aeson             as Aeson
-import qualified Data.ByteString.Lazy   as BS
-import qualified Data.Map.Strict        as Map
-import qualified Data.Text.Encoding     as TE
-import qualified Data.Text.IO           as TIO
-
-import           Control.Lens.Operators
 import           Test.Hspec
+import           System.Directory             (getCurrentDirectory)
 import           Test.Hspec.Expectations.Lens (shouldView, through)
 
-import qualified Citymapper.Types       as Lib
+import qualified Data.Aeson                   as Aeson
+import qualified Data.ByteString.Lazy         as BS
+import qualified Data.Text.Encoding           as TE
+import qualified Data.Text.IO                 as TIO
+
 import qualified Fixtures
+import qualified Lib.Citymapper.Types         as Lib
 
 
 
@@ -28,8 +24,8 @@ readFixture path = do
     BS.fromStrict . TE.encodeUtf8 <$> TIO.readFile (dir </> "test" </> "fixtures" </> path)
 
 main :: IO ()
-main = hspec $ do
-  describe "Disruption Tracker" $ do
+main = hspec .
+  describe "Disruption Tracker" .
     describe "JSON Parsing" $ do
       it "parses a response" $ do
         resp <- readFixture "routestatus.json"
