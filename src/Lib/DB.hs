@@ -2,13 +2,12 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE RecordWildCards   #-}
 
 module Lib.DB where
 
-import           Control.Monad        (void)
 import qualified Data.Aeson           as Aeson
-import           Data.Default         (def)
 import qualified Data.Text            as T
 import qualified Database.RethinkDB   as R
 import qualified GHC.Generics         as Generics
