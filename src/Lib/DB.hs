@@ -33,7 +33,7 @@ setup host = do
   h <- connect host
   R.run' h . R.tableCreate $ disruptionsTable { R.tablePrimaryKey = Just "name" }
 
-writeDisruptions :: Host -> DisruptionRow -> IO R.Datum
+writeDisruptions :: Host -> DisruptionRow -> IO R.WriteResponse
 writeDisruptions host s = do
   h <- connect host
-  R.run' h $ R.insert s disruptionsTable
+  R.run h $ R.insert s disruptionsTable
