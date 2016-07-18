@@ -13,6 +13,8 @@ import qualified Database.RethinkDB   as R
 import qualified GHC.Generics         as Generics
 import qualified Lib.Citymapper.Types as Citymapper
 
+import Database.RethinkDB ((#))
+
 disruptionsTable :: R.Table
 disruptionsTable = R.table "disruptions"
 
@@ -36,4 +38,4 @@ setup host = do
 writeDisruptions :: Host -> DisruptionRow -> IO R.WriteResponse
 writeDisruptions host s = do
   h <- connect host
-  R.run h $ R.replace (const s) disruptionsTable
+  R.run h $ R.ex (disruptionsTable # R.insert s) [ R.conflict R.Replace ]
