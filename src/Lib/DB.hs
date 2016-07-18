@@ -36,4 +36,4 @@ setup host = do
 writeDisruptions :: Host -> DisruptionRow -> IO R.WriteResponse
 writeDisruptions host s = do
   h <- connect host
-  R.run h $ R.insert s disruptionsTable
+  R.run h $ R.replace (const s) disruptionsTable
