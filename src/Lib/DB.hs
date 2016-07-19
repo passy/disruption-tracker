@@ -24,6 +24,7 @@ data Host = Host { hostname :: T.Text
 
 data DisruptionRow = DisruptionRow
   { name        :: T.Text
+  , description :: T.Text
   , disruptions :: [Citymapper.RouteDisruption]
   } deriving (Show, Eq, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
 

@@ -111,10 +111,12 @@ main = do
                  . C.routes
                  . _Just
                  . traverse
-      let extrDisruptions r = (r ^. C.routeName, r ^.. C.status . C.disruptions . traverse)
+      let extrDisruptions r = ( r ^. C.routeName
+                              , r ^. C.status . C.description
+                              , r ^.. C.status . C.disruptions . traverse)
       let disruptions = over mapped extrDisruptions routes
       results <- sequence $ Lib.DB.writeDisruptions (host opts) . toDisruptionsRow <$> disruptions
       print results
 
-    toDisruptionsRow :: (T.Text, [C.RouteDisruption]) -> Lib.DB.DisruptionRow
-    toDisruptionsRow (name, disruptions) = Lib.DB.DisruptionRow { .. }
+    toDisruptionsRow :: (T.Text, T.Text, [C.RouteDisruption]) -> Lib.DB.DisruptionRow
+    toDisruptionsRow (name, description, disruptions) = Lib.DB.DisruptionRow { .. }
