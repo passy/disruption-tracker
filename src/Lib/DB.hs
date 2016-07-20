@@ -18,6 +18,9 @@ import Database.RethinkDB ((#))
 disruptionsTable :: R.Table
 disruptionsTable = R.table "disruptions"
 
+messengerSubscriptionsTable :: R.Table
+messengerSubscriptionsTable = R.table "messenger_subscriptions"
+
 data Host = Host { hostname :: T.Text
                  , port     :: Integer
                  , password :: Maybe T.Text }
@@ -35,6 +38,7 @@ setup :: Host -> IO R.Datum
 setup host = do
   h <- connect host
   R.run' h . R.tableCreate $ disruptionsTable { R.tablePrimaryKey = Just "name" }
+  R.run' h . R.tableCreate $ messengerSubscriptionsTable { R.tablePrimaryKey = Just "recipient_id" }
 
 writeDisruptions :: Host -> DisruptionRow -> IO R.WriteResponse
 writeDisruptions host s = do
