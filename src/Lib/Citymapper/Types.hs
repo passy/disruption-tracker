@@ -16,7 +16,7 @@ import qualified GHC.Generics        as Generics
 
 import           Control.Applicative (empty, (<*>))
 import           Control.Monad       (MonadPlus (), mzero)
-import           Data.Aeson          ((.:))
+import           Data.Aeson          ((.:), (.:?), (.!=))
 
 
 maybeParse :: MonadPlus m => (a -> Maybe b) -> m a -> m b
@@ -91,6 +91,14 @@ data RouteStatus = RouteStatus
   , _disruptions   :: [RouteDisruption]
   } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
 
+defRouteStatus :: RouteStatus
+defRouteStatus = RouteStatus
+  { _statusSummary = "Unknown status."
+  , _description   = "The status of this line is currently unknown."
+  , _statusLevel   = 0
+  , _disruptions   = []
+  }
+
 routeStatusNameModifier :: String -> String
 routeStatusNameModifier "_statusSummary" = "summary"
 routeStatusNameModifier "_statusLevel" = "level"
@@ -115,7 +123,9 @@ routeNameModifier "_routeName" = "name"
 routeNameModifier s = defaultModifier s
 
 instance Aeson.FromJSON Route where
-  parseJSON = genericParseJSON routeNameModifier
+  parseJSON = Aeson.withObject "route" $ \o ->
+    Route <$> o .: "name"
+          <*> o .:? "status" .!= defRouteStatus
 
 instance Aeson.ToJSON Route where
   toEncoding = genericToEncoding routeNameModifier

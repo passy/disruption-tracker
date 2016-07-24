@@ -16,8 +16,11 @@ import qualified Lib.Citymapper.Types as Citymapper
 import Database.RethinkDB ((#))
 import Control.Monad (void)
 
-linesTable :: R.Table
-linesTable = R.table "lines"
+disruptionsTable :: R.Table
+disruptionsTable = R.table "disruptions"
+
+routesInfoTable :: R.Table
+routesInfoTable = R.table "routes_info"
 
 messengerSubscriptionsTable :: R.Table
 messengerSubscriptionsTable = R.table "messenger_subscriptions"
@@ -36,14 +39,61 @@ data LinesRow = LinesRow
 connect :: Host -> IO R.RethinkDBHandle
 connect Host { .. } = R.connect (T.unpack hostname) port (T.unpack <$> password)
 
+supportedRoutes :: [T.Text]
+supportedRoutes =
+  [ "Bakerloo"
+  , "Central"
+  , "Circle"
+  , "DLR"
+  , "District"
+  , "Hammersmith & City"
+  , "Jubilee"
+  , "Metropolitan"
+  , "Northern"
+  , "Overground"
+  , "Piccadilly"
+  , "TfL Rail"
+  , "Victoria"
+  , "Waterloo & City"
+  , "Abellio Greater Anglia"
+  , "Chiltern Railways"
+  , "East Midlands Trains"
+  , "Gatwick Express"
+  , "Grand Central"
+  , "Great Northern"
+  , "Great Western Railway"
+  , "Heathrow Connect"
+  , "Heathrow Express"
+  , "Hull Trains"
+  , "London Midland"
+  , "South West Trains"
+  , "Southeastern"
+  , "Southern"
+  , "Thameslink"
+  , "Virgin Trains"
+  , "Virgin Trains East Coast"
+  , "c2c"
+  , "Tram"
+  , "RB1X"
+  , "RB1"
+  , "RB2"
+  , "RB4"
+  , "RB5"
+  , "RB6"
+  , "Elizabeth"
+  ]
+
 setup :: Host -> IO ()
 setup host = do
   h <- connect host
-  void . R.run' h $ linesTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
+  void . R.run' h $ disruptionsTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
+  void . R.run' h $ routesInfoTable # R.tableCreate
+  void . R.run' h $ routesInfoTable # R.indexCreate "name" (R.! "name")
+  void . R.run' h $ routesInfoTable # R.insert (map (\e -> ["name" R.:= e]) supportedRoutes)
   void . R.run' h $ messengerSubscriptionsTable # R.tableCreate
-  void . R.run' h $ linesTable # R.indexCreate "line" (R.! "line")
+  void . R.run' h $ messengerSubscriptionsTable # R.indexCreate "route" (R.! "route")
 
 writeDisruptions :: Host -> LinesRow -> IO R.WriteResponse
 writeDisruptions host s = do
   h <- connect host
-  R.run h $ R.ex (linesTable # R.insert s) [ R.conflict R.Replace ]
+  R.run h $ R.ex (disruptionsTable # R.insert s) [ R.conflict R.Replace ]
