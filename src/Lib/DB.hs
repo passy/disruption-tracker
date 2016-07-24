@@ -87,11 +87,10 @@ setup :: Host -> IO ()
 setup host = do
   h <- connect host
   void . R.run' h $ disruptionsTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
-  void . R.run' h $ routesInfoTable # R.tableCreate
-  void . R.run' h $ routesInfoTable # R.indexCreate "name" (R.! "name")
+  void . R.run' h $ routesInfoTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
   void . R.run' h $ routesInfoTable # R.insert (map (\e -> ["name" R.:= e]) supportedRoutes)
-  void . R.run' h $ messengerSubscriptionsTable # R.tableCreate
-  void . R.run' h $ messengerSubscriptionsTable # R.indexCreate "route" (R.! "route")
+  void . R.run' h $ messengerSubscriptionsTable { R.tablePrimaryKey = Just "route" } # R.tableCreate
+  void . R.run' h $ messengerSubscriptionsTable # R.indexCreate "recipients" (R.! "recipients")
 
 writeDisruptions :: Host -> LinesRow -> IO R.WriteResponse
 writeDisruptions host s = do
