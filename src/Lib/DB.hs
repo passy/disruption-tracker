@@ -39,48 +39,48 @@ data LinesRow = LinesRow
 connect :: Host -> IO R.RethinkDBHandle
 connect Host { .. } = R.connect (T.unpack hostname) port (T.unpack <$> password)
 
-supportedRoutes :: [T.Text]
+supportedRoutes :: [(T.Text, T.Text)]
 supportedRoutes =
-  [ "Bakerloo"
-  , "Central"
-  , "Circle"
-  , "DLR"
-  , "District"
-  , "Hammersmith & City"
-  , "Jubilee"
-  , "Metropolitan"
-  , "Northern"
-  , "Overground"
-  , "Piccadilly"
-  , "TfL Rail"
-  , "Victoria"
-  , "Waterloo & City"
-  , "Abellio Greater Anglia"
-  , "Chiltern Railways"
-  , "East Midlands Trains"
-  , "Gatwick Express"
-  , "Grand Central"
-  , "Great Northern"
-  , "Great Western Railway"
-  , "Heathrow Connect"
-  , "Heathrow Express"
-  , "Hull Trains"
-  , "London Midland"
-  , "South West Trains"
-  , "Southeastern"
-  , "Southern"
-  , "Thameslink"
-  , "Virgin Trains"
-  , "Virgin Trains East Coast"
-  , "c2c"
-  , "Tram"
-  , "RB1X"
-  , "RB1"
-  , "RB2"
-  , "RB4"
-  , "RB5"
-  , "RB6"
-  , "Elizabeth"
+  [ ("Bakerloo", "bakerloo.svg")
+  , ("Central", "central.svg")
+  , ("Circle", "circle.svg")
+  , ("DLR", "dlr.svg")
+  , ("District", "district.svg")
+  , ("Hammersmith & City", "hac.svg")
+  , ("Jubilee", "jubilee.svg")
+  , ("Metropolitan", "metropolitan.svg")
+  , ("Northern", "northern.svg")
+  , ("Overground", "overground.svg")
+  , ("Piccadilly", "piccadilly.svg")
+  , ("TfL Rail", "rail.svg")
+  , ("Victoria", "victoria.svg")
+  , ("Waterloo & City", "wac.svg")
+  , ("Abellio Greater Anglia", "")
+  , ("Chiltern Railways", "")
+  , ("East Midlands Trains", "")
+  , ("Gatwick Express", "")
+  , ("Grand Central", "")
+  , ("Great Northern", "")
+  , ("Great Western Railway", "")
+  , ("Heathrow Connect", "")
+  , ("Heathrow Express", "")
+  , ("Hull Trains", "")
+  , ("London Midland", "")
+  , ("South West Trains", "")
+  , ("Southeastern", "")
+  , ("Southern", "")
+  , ("Thameslink", "")
+  , ("Virgin Trains", "")
+  , ("Virgin Trains East Coast", "")
+  , ("c2c", "")
+  , ("Tram", "tramlink.svg")
+  , ("RB1X", "")
+  , ("RB1", "")
+  , ("RB2", "")
+  , ("RB4", "")
+  , ("RB5", "")
+  , ("RB6", "")
+  , ("Elizabeth", "")
   ]
 
 setup :: Host -> IO ()
@@ -88,9 +88,16 @@ setup host = do
   h <- connect host
   void . R.run' h $ disruptionsTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
   void . R.run' h $ routesInfoTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
-  void . R.run' h $ routesInfoTable # R.insert (map (\e -> ["name" R.:= e]) supportedRoutes)
   void . R.run' h $ messengerSubscriptionsTable { R.tablePrimaryKey = Just "route" } # R.tableCreate
   void . R.run' h $ messengerSubscriptionsTable # R.indexCreate "recipients" (R.! "recipients")
+  writeRoutes host supportedRoutes
+
+writeRoutes :: Host -> [(T.Text, T.Text)] -> IO ()
+writeRoutes host routes = do
+  h <- connect host
+  void . R.run' h $ routesInfoTable # R.delete
+  void . R.run' h $ routesInfoTable #
+    R.insert (map (\(n, url) -> ["name" R.:= n, "image_name" R.:= url]) routes)
 
 writeDisruptions :: Host -> LinesRow -> IO R.WriteResponse
 writeDisruptions host s = do
