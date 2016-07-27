@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
 
 module Main where
 
@@ -19,11 +18,12 @@ import qualified Options.Applicative.Types as Opt
 import           Control.Applicative       (optional, (<**>))
 import           Control.Lens              (mapped, over, traverse, (^.), (^..),
                                             _Just)
-import           Control.Monad             (void)
+import           Control.Monad             (void, forever)
 import           Data.Monoid               ((<>))
 import           Data.Version              (Version (), showVersion)
 import           Paths_disruption_tracker  (version)
 import           System.Environment        (getProgName)
+import           Control.Concurrent        (threadDelay)
 
 data Options = Options
   { optHostname :: T.Text
@@ -37,6 +37,7 @@ instance Default.Default Options where
     Options "localhost" 28015 Default.def NoOp
 
 data Command = Collect
+             | CollectD Int
              | Setup
              | NoOp deriving (Show)
 
@@ -57,17 +58,32 @@ options =
                                         <> Opt.help "RethinkDB password" ) )
           <*> command
 
+collectDOptions :: Opt.Parser Command
+collectDOptions =
+  CollectD <$> intOption ( Opt.long "interval"
+                        <> Opt.short 'i'
+                        <> Opt.help "Interval to check for new disruptions at (seconds)"
+                        <> Opt.value 5
+                        <> Opt.showDefault )
+
 command :: Opt.Parser Command
 command =
   Opt.subparser (
      Opt.command "setup" ( Opt.info (pure Setup) (Opt.progDesc "One-time database setup. Run before collect.") )
-  <> Opt.command "collect" ( Opt.info (pure Collect) (Opt.progDesc "Run a one-time collection.") ) )
+  <> Opt.command "collect" ( Opt.info (pure Collect) (Opt.progDesc "Run a one-time collection.") )
+  <> Opt.command "collectd" ( Opt.info collectDOptions (Opt.progDesc "Start a continous collection. (Not actually daemonizing.)") ) )
 
 integer :: Opt.ReadM Integer
 integer = either error fst . Read.decimal . T.pack <$> Opt.readerAsk
 
+int :: Opt.ReadM Int
+int = either error fst . Read.decimal . T.pack <$> Opt.readerAsk
+
 integerOption :: Opt.Mod Opt.OptionFields Integer -> Opt.Parser Integer
 integerOption = Opt.option integer
+
+intOption :: Opt.Mod Opt.OptionFields Int -> Opt.Parser Int
+intOption = Opt.option int
 
 cliParser :: String -> Version -> Opt.ParserInfo Options
 cliParser progName ver =
@@ -94,11 +110,16 @@ main = do
     run opts = case optCommand opts of
       Setup -> runSetup opts
       Collect -> runCollect opts
+      CollectD interval -> loopIndefinitely interval $ runCollect opts
       NoOp -> error "Invalid command."
 
     runSetup :: Options -> IO ()
     runSetup opts =
       void . Lib.DB.setup $ host opts
+
+    loopIndefinitely :: Int -> IO () -> IO ()
+    loopIndefinitely seconds fn =
+      forever $ fn >> threadDelay (seconds * 1000 * 1000)
 
     runCollect :: Options -> IO ()
     runCollect opts = do
