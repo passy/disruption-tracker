@@ -12,8 +12,8 @@ import qualified Lib.DB
 import qualified Network.Wreq              as Wreq
 import qualified Options.Applicative       as Opt
 import qualified Options.Applicative.Text  as OptT
-
 import qualified Options.Applicative.Types as Opt
+import qualified Control.Exception         as E
 
 import           Control.Applicative       (optional, (<**>))
 import           Control.Lens              (mapped, over, traverse, (^.), (^..),
@@ -110,7 +110,7 @@ main = do
     run opts = case optCommand opts of
       Setup -> runSetup opts
       Collect -> runCollect opts
-      CollectD interval -> loopIndefinitely interval $ runCollect opts
+      CollectD interval -> loopIndefinitely interval . E.uninterruptibleMask_ $ runCollect opts
       NoOp -> error "Invalid command."
 
     runSetup :: Options -> IO ()
