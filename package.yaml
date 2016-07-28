@@ -71,13 +71,8 @@ executables:
       - disruption-tracker
       - optparse-applicative
       - optparse-text
-      - bytestring
       - lens
       - wreq
-      - transformers
-      - aeson
-      - aeson-casing
-      - rethinkdb
       - data-default
     other-modules:
       - Paths_disruption_tracker
