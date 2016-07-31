@@ -36,6 +36,10 @@ If this fails, please manually drop the table for now so we can recreate it:
 r.db('test').tableDrop('disruptions')
 ```
 
+## Deployment
+
+See https://github.com/passy/disruption-bot-deployment.
+
 ## Collecting
 
 Now you can start manually collecting. Automatic polling is coming soon.
