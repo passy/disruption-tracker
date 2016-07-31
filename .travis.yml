@@ -105,7 +105,7 @@ deploy:
   provider: releases
   api_key:
     secure: EIAL8WyMEG+rlpVde3Gf0y49CLtAH73Lj9gbf3SiOp1q1MjbeXZIr9gLHkRf2MHwkmKOMDRO41XzudBeyw5QWSjvTcq0jbakAvYp0TnOnhnj+eoNZqyTHtNEtaA443OafjruQV1xrA+5i78idYLWiFwbeZItZ8TnCmKg+5Wi4UM8bUmioaHaT/Ki6D9HXJWmTLPsYAreHbQCaZNcwI8LkgqL1sL3Eot/iyTgyLLsztgssRBe3pNz8bp1j/YPL8B9LKaJahMx7Uo54kE7hggdsiRPh74FyPc9CQ3QLFgMNiJJxaf0NtWZ3zk3tZE0KK86FNPe9pEbfzgWV2gty+OsygXKDAgyioGJM/B6fxHwcK9Mwvrw0yJwA/LWjUgTuYUOm2AgioXpwl8KQ7+5KjCVNlGOX4zhoqeD5l4nX6Ho15BEWvmMQGUQ95pnLnBAYFVMXlhoZMVkdf2c6GZr9n67nPT3JqI9uMS1hMw/DFEjGmJ2SmEf1xHR4nWsLuO2KDYCV7PEZPuPhQsTlTljjv6Xci7vsfIFD3u7nKsE9HVAQDAl9bn/8SeC7UoqgcUIa5qI5/g3qdHrROCYetxFtwKEBuTzdTRA+FHyqtjjb8aRFkRIFaNVyX5cjw32Em9H0HwLsrJbWmjSamEcLkBBl6H/Jn+1kQOdyWRdCEJuM/W3Q0U=
-  file: .stack-work/install/x86_64-linux/nightly-2016-07-07/8.0.1/bin/disruption-tracker
+  file: /home/travis/.local/bin/disruption-tracker
   skip-cleanup: true
   on:
     tags: true
