@@ -1,4 +1,5 @@
 # disruption-tracker
+[![Build Status](https://travis-ci.org/passy/disruption-tracker.svg?branch=master)](https://travis-ci.org/passy/disruption-tracker)
 
 > Collecting Tube disruption data. Maybe more later.
 
