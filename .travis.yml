@@ -26,27 +26,9 @@ cache:
 #     addons: {apt: {packages: [libfcgi-dev,libgmp-dev]}}
 matrix:
   include:
-  # The Stack builds. We can pass in arbitrary Stack arguments via the ARGS
-  # variable, such as using --stack-yaml to point to a different file.
-  # - env: BUILD=stack ARGS="--resolver lts-5"
-  #   compiler: ": #stack 7.10.3"
-  #   addons: {apt: {packages: [ghc-7.10.3], sources: [hvr-ghc]}}
-
-  # Nightly builds are allowed to fail
   - env: BUILD=stack ARGS="--resolver nightly"
     compiler: ": #stack nightly"
     addons: {apt: {packages: [libgmp-dev]}}
-
-  # - env: BUILD=stack ARGS="--resolver lts-5"
-  #   compiler: ": #stack 7.10.3 osx"
-  #   os: osx
-
-  # - env: BUILD=stack ARGS="--resolver nightly"
-  #   compiler: ": #stack nightly osx"
-  #   os: osx
-
-  # allow_failures:
-  # - env: BUILD=stack ARGS="--resolver nightly"
 
 before_install:
 # Using compiler above sets CC to an invalid value, so unset it
@@ -100,12 +82,13 @@ script:
         (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
       ;;
   esac
+- tar -cjvf disruption-tracker.lnx64.tar.bz2 /home/travis/.local/bin/disruption-tracker
 
 deploy:
   provider: releases
   api_key:
     secure: EIAL8WyMEG+rlpVde3Gf0y49CLtAH73Lj9gbf3SiOp1q1MjbeXZIr9gLHkRf2MHwkmKOMDRO41XzudBeyw5QWSjvTcq0jbakAvYp0TnOnhnj+eoNZqyTHtNEtaA443OafjruQV1xrA+5i78idYLWiFwbeZItZ8TnCmKg+5Wi4UM8bUmioaHaT/Ki6D9HXJWmTLPsYAreHbQCaZNcwI8LkgqL1sL3Eot/iyTgyLLsztgssRBe3pNz8bp1j/YPL8B9LKaJahMx7Uo54kE7hggdsiRPh74FyPc9CQ3QLFgMNiJJxaf0NtWZ3zk3tZE0KK86FNPe9pEbfzgWV2gty+OsygXKDAgyioGJM/B6fxHwcK9Mwvrw0yJwA/LWjUgTuYUOm2AgioXpwl8KQ7+5KjCVNlGOX4zhoqeD5l4nX6Ho15BEWvmMQGUQ95pnLnBAYFVMXlhoZMVkdf2c6GZr9n67nPT3JqI9uMS1hMw/DFEjGmJ2SmEf1xHR4nWsLuO2KDYCV7PEZPuPhQsTlTljjv6Xci7vsfIFD3u7nKsE9HVAQDAl9bn/8SeC7UoqgcUIa5qI5/g3qdHrROCYetxFtwKEBuTzdTRA+FHyqtjjb8aRFkRIFaNVyX5cjw32Em9H0HwLsrJbWmjSamEcLkBBl6H/Jn+1kQOdyWRdCEJuM/W3Q0U=
-  file: /home/travis/.local/bin/disruption-tracker
+  file: disruption-tracker.lnx64.tar.bz2
   skip-cleanup: true
   on:
     tags: true
