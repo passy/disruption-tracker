@@ -7,6 +7,7 @@ import           BasicPrelude
 import           Test.Hspec
 import           System.Directory             (getCurrentDirectory)
 import           Test.Hspec.Expectations.Lens (shouldView, through)
+import           Control.Lens                 (to)
 
 import qualified Data.Aeson                   as Aeson
 import qualified Data.ByteString.Lazy         as BS
@@ -31,6 +32,11 @@ main = hspec .
         resp <- readFixture "routestatus.json"
         let res = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
         res `shouldView` Lib.JSONDateTime Fixtures.lastUpdatedTime `through` Lib.lastUpdatedTime
+
+      it "parses a response with a different status" $ do
+        resp <- readFixture "routestatus_1.json"
+        let res = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
+        res `shouldView` 8 `through` Lib.groupings . to length
 
       it "serializes to JSON" $ do
         let d = Lib.RouteDisruption { Lib._disruptionSummary = "Something bad"

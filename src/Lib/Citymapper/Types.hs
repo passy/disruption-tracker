@@ -105,7 +105,11 @@ routeStatusNameModifier "_statusLevel" = "level"
 routeStatusNameModifier s = defaultModifier s
 
 instance Aeson.FromJSON RouteStatus where
-  parseJSON = genericParseJSON routeStatusNameModifier
+  parseJSON = Aeson.withObject "status" $ \o ->
+    RouteStatus <$> o .: "summary"
+                <*> o .: "description" .!= mempty
+                <*> o .: "level"
+                <*> o .: "disruptions"
 
 instance Aeson.ToJSON RouteStatus where
   toEncoding = genericToEncoding routeStatusNameModifier
