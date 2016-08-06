@@ -138,4 +138,4 @@ main = do
                                         (r ^.. C.status . C.disruptions . traverse)
       let disruptions = over mapped extrLine routes
       results <- sequence $ Lib.DB.writeDisruptions (host opts) <$> disruptions
-      print results
+      Lib.printIfNonEmpty . Lib.summarizeWriteResponse $ results

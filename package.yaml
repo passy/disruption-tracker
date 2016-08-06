@@ -36,6 +36,7 @@ library:
     - rethinkdb
     - data-default
     - hourglass
+    - text-format
   exposed-modules:
     - Lib
     - Lib.Citymapper.Types
