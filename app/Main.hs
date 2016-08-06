@@ -5,6 +5,7 @@ module Main where
 
 import qualified Data.Default              as Default
 import qualified Data.Text                 as T
+import qualified Data.Text.Lazy.IO         as TLIO
 import qualified Data.Text.Read            as Read
 import qualified Lib
 import qualified Lib.Citymapper.Types      as C
@@ -138,4 +139,4 @@ main = do
                                         (r ^.. C.status . C.disruptions . traverse)
       let disruptions = over mapped extrLine routes
       results <- sequence $ Lib.DB.writeDisruptions (host opts) <$> disruptions
-      Lib.printIfNonEmpty . Lib.summarizeWriteResponse $ results
+      maybe (pure ()) TLIO.putStrLn $ Lib.summarizeWriteResponse results
