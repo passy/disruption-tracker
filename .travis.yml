@@ -82,7 +82,7 @@ script:
         (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
       ;;
   esac
-- tar -cjvf disruption-tracker.lnx64.tar.bz2 /home/travis/.local/bin/disruption-tracker
+- tar -cjvf disruption-tracker.lnx64.tar.bz2 -C /home/travis/.local/bin/ disruption-tracker
 
 deploy:
   provider: releases
