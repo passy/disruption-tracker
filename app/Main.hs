@@ -1,43 +1,54 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 
 module Main where
 
-import qualified Data.Default              as Default
-import qualified Data.Text                 as T
-import qualified Data.Text.Lazy            as TL
-import qualified Data.Text.Lazy.IO         as TLIO
-import qualified Data.Text.Read            as Read
+import qualified Control.Exception.Lifted    as E
+import qualified Control.Monad.Reader        as Reader
+import qualified Data.Default                as Default
+import qualified Data.Text                   as T
+import qualified Data.Text.Lazy              as TL
+import qualified Data.Text.Lazy.IO           as TLIO
+import qualified Data.Text.Read              as Read
 import qualified Lib
-import qualified Lib.Citymapper.Types      as C
+import qualified Lib.Citymapper.Types        as C
 import qualified Lib.DB
-import qualified Network.Wreq              as Wreq
-import qualified Options.Applicative       as Opt
-import qualified Options.Applicative.Text  as OptT
-import qualified Options.Applicative.Types as Opt
-import qualified Control.Exception         as E
+import qualified Network.Wreq                as Wreq
+import qualified Options.Applicative         as Opt
+import qualified Options.Applicative.Text    as OptT
+import qualified Options.Applicative.Types   as Opt
 
-import           Control.Applicative       (optional, (<**>))
-import           Control.Lens              (mapped, over, traverse, (^.), (^..),
-                                            _Just)
-import           Control.Monad             (void, forever)
-import           Data.Monoid               ((<>))
-import           Data.Version              (Version (), showVersion)
-import           Paths_disruption_tracker  (version)
-import           System.Environment        (getProgName)
-import           Control.Concurrent        (threadDelay)
+import           Control.Applicative         (optional, (<**>))
+import           Control.Concurrent          (threadDelay)
+import           Control.Lens                (mapped, over, traverse, (^.),
+                                              (^..), _Just)
+import           Control.Monad               (forever)
+import           Control.Monad.IO.Class      (liftIO)
+import           Control.Monad.Trans.Control (MonadBaseControl)
+import           Data.Monoid                 ((<>))
+import           Data.Version                (Version (), showVersion)
+import           Paths_disruption_tracker    (version)
+import           System.Environment          (getProgName)
 
 data Verbosity = Normal | Verbose
   deriving (Eq, Show)
 
 data Options = Options
-  { optHostname :: T.Text
-  , optPort     :: Integer
-  , optPassword :: Maybe T.Text
+  { optHostname  :: T.Text
+  , optPort      :: Integer
+  , optPassword  :: Maybe T.Text
   , optVerbosity :: Verbosity
-  , optCommand  :: Command
+  , optCommand   :: Command
   } deriving (Show)
+
+type OptT = Reader.ReaderT Options IO ()
+
+runOptT :: OptT -> Options -> IO ()
+runOptT = Reader.runReaderT
 
 instance Default.Default Options where
   def =
@@ -113,29 +124,30 @@ cliParser progName ver =
 main :: IO ()
 main = do
   progName <- getProgName
-  Opt.execParser (cliParser progName version) >>= run
+  Opt.execParser (cliParser progName version) >>= runOptT run
   where
     host :: Options -> Lib.DB.Host
     host opts = Lib.DB.Host (optHostname opts) (optPort opts) (optPassword opts)
 
-    run :: Options -> IO ()
-    run opts = case optCommand opts of
-      Setup -> runSetup opts
-      Collect -> runCollect opts
-      CollectD interval -> loopIndefinitely interval . E.uninterruptibleMask_ $ runCollect opts
+    run :: OptT
+    run = Reader.asks optCommand >>= \case
+      Setup -> runSetup
+      Collect -> runCollect
+      CollectD interval -> loopIndefinitely interval runCollect
       NoOp -> error "Invalid command."
 
-    runSetup :: Options -> IO ()
-    runSetup opts =
-      void . Lib.DB.setup $ host opts
+    runSetup :: OptT
+    runSetup = Reader.asks host >>= liftIO . Lib.DB.setup
 
-    loopIndefinitely :: Int -> IO () -> IO ()
+    loopIndefinitely :: forall m a. (Reader.MonadIO m, MonadBaseControl IO m) => Int -> m a -> m a
     loopIndefinitely seconds fn =
-      forever $ fn >> threadDelay (seconds * 1000 * 1000)
+      forever $ do
+        _ <- E.uninterruptibleMask_ fn
+        liftIO . threadDelay $ seconds * 1000 * 1000
 
-    runCollect :: Options -> IO ()
-    runCollect opts = do
-      resp <- Wreq.asJSON =<< Wreq.get (T.unpack Lib.disruptionUrl)
+    runCollect :: OptT
+    runCollect = do
+      resp <- liftIO $ Wreq.asJSON =<< Wreq.get (T.unpack Lib.disruptionUrl)
       let routes :: [C.Route]
           routes = resp
                ^.. Wreq.responseBody
@@ -149,11 +161,13 @@ main = do
                                         (r ^. C.status . C.statusLevel)
                                         (r ^.. C.status . C.disruptions . traverse)
       let disruptions = over mapped extrLine routes
-      results <- sequence $ Lib.DB.writeDisruptions (host opts) <$> disruptions
-      printSummary opts $ Lib.summarizeWriteResponse results
+      h <- Reader.asks host
+      results <- liftIO . sequence $ Lib.DB.writeDisruptions h <$> disruptions
+      printSummary $ Lib.summarizeWriteResponse results
 
-    printSummary :: Options -> Maybe TL.Text -> IO ()
-    printSummary opts text = case (optVerbosity opts, text) of
-      (Normal, Nothing) -> pure ()
-      (Verbose, Nothing) -> TLIO.putStrLn "No changes."
-      (_, Just t) -> TLIO.putStrLn t
+    printSummary :: Maybe TL.Text -> OptT
+    printSummary text = Reader.asks optVerbosity >>= \v ->
+      liftIO $ case (v, text) of
+        (Normal, Nothing) ->  pure ()
+        (Verbose, Nothing) -> TLIO.putStrLn "No changes."
+        (_, Just t) -> TLIO.putStrLn t

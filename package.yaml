@@ -75,5 +75,9 @@ executables:
       - lens
       - wreq
       - data-default
+      - mtl
+      - transformers
+      - lifted-base
+      - monad-control
     other-modules:
       - Paths_disruption_tracker
