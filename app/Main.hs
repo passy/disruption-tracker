@@ -1,10 +1,12 @@
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Main where
 
 import qualified Data.Default              as Default
 import qualified Data.Text                 as T
+import qualified Data.Text.Lazy            as TL
 import qualified Data.Text.Lazy.IO         as TLIO
 import qualified Data.Text.Read            as Read
 import qualified Lib
@@ -148,4 +150,10 @@ main = do
                                         (r ^.. C.status . C.disruptions . traverse)
       let disruptions = over mapped extrLine routes
       results <- sequence $ Lib.DB.writeDisruptions (host opts) <$> disruptions
-      maybe (pure ()) TLIO.putStrLn $ Lib.summarizeWriteResponse results
+      printSummary opts $ Lib.summarizeWriteResponse results
+
+    printSummary :: Options -> Maybe TL.Text -> IO ()
+    printSummary opts text = case (optVerbosity opts, text) of
+      (Normal, Nothing) -> pure ()
+      (Verbose, Nothing) -> TLIO.putStrLn "No changes."
+      (_, Just t) -> TLIO.putStrLn t
