@@ -26,21 +26,26 @@ import           Paths_disruption_tracker  (version)
 import           System.Environment        (getProgName)
 import           Control.Concurrent        (threadDelay)
 
+data Verbosity = Normal | Verbose
+  deriving (Eq, Show)
+
 data Options = Options
   { optHostname :: T.Text
   , optPort     :: Integer
   , optPassword :: Maybe T.Text
+  , optVerbosity :: Verbosity
   , optCommand  :: Command
   } deriving (Show)
 
 instance Default.Default Options where
   def =
-    Options "localhost" 28015 Default.def NoOp
+    Options "localhost" 28015 Default.def Normal NoOp
 
 data Command = Collect
              | CollectD Int
              | Setup
-             | NoOp deriving (Show)
+             | NoOp
+  deriving (Show)
 
 options :: Opt.Parser Options
 options =
@@ -57,6 +62,10 @@ options =
           <*> optional ( OptT.textOption ( Opt.long "password"
                                         <> Opt.short 'w'
                                         <> Opt.help "RethinkDB password" ) )
+          <*> Opt.flag Normal Verbose
+             ( Opt.long "verbose"
+            <> Opt.short 'v'
+            <> Opt.help "Provide status updates on every invocation" )
           <*> command
 
 collectDOptions :: Opt.Parser Command
