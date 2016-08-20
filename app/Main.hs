@@ -26,7 +26,7 @@ import           Control.Applicative         (optional, (<**>))
 import           Control.Concurrent          (threadDelay)
 import           Control.Lens                (mapped, over, traverse, (^.),
                                               (^..), _Just)
-import           Control.Monad               (forever)
+import           Control.Monad               (forever, void)
 import           Control.Monad.IO.Class      (liftIO)
 import           Control.Monad.Trans.Control (MonadBaseControl)
 import           Data.Monoid                 ((<>))
@@ -68,10 +68,10 @@ options =
                              <> Opt.value (optHostname Default.def)
                              <> Opt.showDefault )
           <*> integerOption ( Opt.long "port"
-                       <> Opt.short 'p'
-                       <> Opt.help "RethinkDB port"
-                       <> Opt.value (optPort Default.def)
-                       <> Opt.showDefault )
+                           <> Opt.short 'p'
+                           <> Opt.help "RethinkDB port"
+                           <> Opt.value (optPort Default.def)
+                           <> Opt.showDefault )
           <*> optional ( OptT.textOption ( Opt.long "password"
                                         <> Opt.short 'w'
                                         <> Opt.help "RethinkDB password" ) )
@@ -142,8 +142,11 @@ main = do
     loopIndefinitely :: forall m a. (Reader.MonadIO m, MonadBaseControl IO m) => Int -> m a -> m a
     loopIndefinitely seconds fn =
       forever $ do
-        _ <- E.uninterruptibleMask_ fn
+        _ <- void fn `E.catch` handler
         liftIO . threadDelay $ seconds * 1000 * 1000
+      where
+        handler :: forall m. Reader.MonadIO m => E.SomeException -> m ()
+        handler e = liftIO . putStrLn $ "Ignored Error: " <> show e
 
     runCollect :: OptT
     runCollect = do
