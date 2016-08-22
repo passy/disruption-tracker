@@ -79,5 +79,6 @@ executables:
       - transformers
       - lifted-base
       - monad-control
+      - safe-exceptions
     other-modules:
       - Paths_disruption_tracker

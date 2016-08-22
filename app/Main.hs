@@ -7,7 +7,7 @@
 
 module Main where
 
-import qualified Control.Exception.Lifted    as E
+import qualified Control.Exception.Safe      as E
 import qualified Control.Monad.Reader        as Reader
 import qualified Data.Default                as Default
 import qualified Data.Text                   as T
@@ -28,7 +28,6 @@ import           Control.Lens                (mapped, over, traverse, (^.),
                                               (^..), _Just)
 import           Control.Monad               (forever, void)
 import           Control.Monad.IO.Class      (liftIO)
-import           Control.Monad.Trans.Control (MonadBaseControl)
 import           Data.Monoid                 ((<>))
 import           Data.Version                (Version (), showVersion)
 import           Paths_disruption_tracker    (version)
@@ -139,10 +138,10 @@ main = do
     runSetup :: OptT
     runSetup = Reader.asks host >>= liftIO . Lib.DB.setup
 
-    loopIndefinitely :: forall m a. (Reader.MonadIO m, MonadBaseControl IO m) => Int -> m a -> m a
+    loopIndefinitely :: forall m a. (Reader.MonadIO m, E.MonadCatch m) => Int -> m a -> m a
     loopIndefinitely seconds fn =
       forever $ do
-        _ <- void fn `E.catch` handler
+        _ <- void fn `E.catchAny` handler
         liftIO . threadDelay $ seconds * 1000 * 1000
       where
         handler :: forall m. Reader.MonadIO m => E.SomeException -> m ()
