@@ -1,19 +1,19 @@
-{-# LANGUAGE DeriveAnyClass    #-}
-{-# LANGUAGE DeriveGeneric     #-}
-{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Lib.DB where
 
-import qualified Data.Aeson           as Aeson
-import qualified Data.Text            as T
-import qualified Database.RethinkDB   as R
-import qualified GHC.Generics         as Generics
+import qualified Data.Aeson as Aeson
+import qualified Data.Text as T
+import qualified Database.RethinkDB as R
+import qualified GHC.Generics as Generics
 import qualified Lib.Citymapper.Types as Citymapper
 
-import Database.RethinkDB ((#))
+import Database.RethinkDB (( # ))
 import Control.Monad (void)
 
 disruptionsTable :: R.Table
@@ -25,19 +25,21 @@ routesInfoTable = R.table "routes_info"
 messengerSubscriptionsTable :: R.Table
 messengerSubscriptionsTable = R.table "messenger_subscriptions"
 
-data Host = Host { hostname :: T.Text
-                 , port     :: Integer
-                 , password :: Maybe T.Text }
+data Host = Host
+  { hostname :: T.Text
+  , port :: Integer
+  , password :: Maybe T.Text
+  }
 
 data LinesRow = LinesRow
-  { name        :: T.Text
+  { name :: T.Text
   , description :: T.Text
-  , level       :: Int
+  , level :: Int
   , disruptions :: [Citymapper.RouteDisruption]
   } deriving (Show, Eq, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
 
 connect :: Host -> IO R.RethinkDBHandle
-connect Host { .. } = R.connect (T.unpack hostname) port (T.unpack <$> password)
+connect Host {..} = R.connect (T.unpack hostname) port (T.unpack <$> password)
 
 supportedRoutes :: [(T.Text, T.Text)]
 supportedRoutes =
@@ -80,26 +82,39 @@ supportedRoutes =
   , ("RB4", "")
   , ("RB5", "")
   , ("RB6", "")
-  , ("Elizabeth", "")
-  ]
+  , ("Elizabeth", "")]
 
 setup :: Host -> IO ()
 setup host = do
   h <- connect host
-  void . R.run' h $ disruptionsTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
-  void . R.run' h $ routesInfoTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
-  void . R.run' h $ messengerSubscriptionsTable { R.tablePrimaryKey = Just "route" } # R.tableCreate
-  void . R.run' h $ messengerSubscriptionsTable # R.indexCreate "recipients" (R.! "recipients")
+  void . R.run' h $
+    disruptionsTable
+    { R.tablePrimaryKey = Just "name"
+    } #
+    R.tableCreate
+  void . R.run' h $
+    routesInfoTable
+    { R.tablePrimaryKey = Just "name"
+    } #
+    R.tableCreate
+  void . R.run' h $
+    messengerSubscriptionsTable
+    { R.tablePrimaryKey = Just "route"
+    } #
+    R.tableCreate
+  void . R.run' h $
+    messengerSubscriptionsTable # R.indexCreate "recipients" (R.! "recipients")
   writeRoutes host supportedRoutes
 
 writeRoutes :: Host -> [(T.Text, T.Text)] -> IO ()
 writeRoutes host routes = do
   h <- connect host
   void . R.run' h $ routesInfoTable # R.delete
-  void . R.run' h $ routesInfoTable #
+  void . R.run' h $
+    routesInfoTable #
     R.insert (map (\(n, url) -> ["name" R.:= n, "image_url" R.:= url]) routes)
 
 writeDisruptions :: Host -> LinesRow -> IO R.WriteResponse
 writeDisruptions host s = do
   h <- connect host
-  R.run h $ R.ex (disruptionsTable # R.insert s) [ R.conflict R.Replace ]
+  R.run h $ R.ex (disruptionsTable # R.insert s) [R.conflict R.Replace]
