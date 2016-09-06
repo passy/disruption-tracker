@@ -39,48 +39,48 @@ data LinesRow = LinesRow
 connect :: Host -> IO R.RethinkDBHandle
 connect Host { .. } = R.connect (T.unpack hostname) port (T.unpack <$> password)
 
-supportedRoutes :: [(T.Text, T.Text)]
-supportedRoutes =
-  [ ("Bakerloo", "https://cldup.com/bpEYeP85ME.svg")
-  , ("Central", "https://cldup.com/nDJhXOtPGp.svg")
-  , ("Circle", "https://cldup.com/y3KP3pNwQ1.svg")
-  , ("DLR", "https://cldup.com/xrqs5DDlmk.svg")
-  , ("District", "https://cldup.com/j7UUsqf2ZU.svg")
-  , ("Hammersmith & City", "https://cldup.com/f_9g4QEazt.svg")
-  , ("Jubilee", "https://cldup.com/h6ilsZO_yQ.svg")
-  , ("Metropolitan", "https://cldup.com/IAEMZbzvn5.svg")
-  , ("Northern", "https://cldup.com/LBDbNgH_zH.svg")
-  , ("Overground", "https://cldup.com/ETi6S655Vh.svg")
-  , ("Piccadilly", "https://cldup.com/62tk-BxyNd.svg")
-  , ("TfL Rail", "https://cldup.com/WeSoPrcj4I.svg")
-  , ("Victoria", "https://cldup.com/Mz8K0m_Yl9.svg")
-  , ("Waterloo & City", "https://cldup.com/aYYOiTCAVN.svg")
-  , ("Abellio Greater Anglia", "")
-  , ("Chiltern Railways", "")
-  , ("East Midlands Trains", "")
-  , ("Gatwick Express", "")
-  , ("Grand Central", "")
-  , ("Great Northern", "")
-  , ("Great Western Railway", "")
-  , ("Heathrow Connect", "")
-  , ("Heathrow Express", "")
-  , ("Hull Trains", "")
-  , ("London Midland", "")
-  , ("South West Trains", "")
-  , ("Southeastern", "")
-  , ("Southern", "")
-  , ("Thameslink", "")
-  , ("Virgin Trains", "")
-  , ("Virgin Trains East Coast", "")
-  , ("c2c", "")
-  , ("Tram", "https://cldup.com/s5_CzFHxlW.svg")
-  , ("RB1X", "")
-  , ("RB1", "")
-  , ("RB2", "")
-  , ("RB4", "")
-  , ("RB5", "")
-  , ("RB6", "")
-  , ("Elizabeth", "")
+routesAndColors :: [(T.Text, T.Text)]
+routesAndColors =
+  [ ("Bakerloo", "#894E24")
+  , ("Central", "#DC241F")
+  , ("Circle", "#FFCE00")
+  , ("DLR", "#00AFAD")
+  , ("District", "#007229")
+  , ("Hammersmith & City", "#D799AF")
+  , ("Jubilee", "#868F98")
+  , ("Metropolitan", "#751056")
+  , ("Northern", "#000000")
+  , ("Overground", "#E86A10")
+  , ("Piccadilly", "#0019A8")
+  , ("TfL Rail", "#223589")
+  , ("Victoria", "#00A0E2")
+  , ("Waterloo & City", "#76D0BD")
+  , ("Abellio Greater Anglia", "#003466")
+  , ("Chiltern Railways", "#003466")
+  , ("East Midlands Trains", "#003466")
+  , ("Gatwick Express", "#E21020")
+  , ("Grand Central", "#003466")
+  , ("Great Northern", "#003466")
+  , ("Great Western Railway", "#003466")
+  , ("Heathrow Connect", "#003466")
+  , ("Heathrow Express", "#532E63")
+  , ("Hull Trains", "#003466")
+  , ("London Midland", "#003466")
+  , ("South West Trains", "#003466")
+  , ("Southeastern", "#003466")
+  , ("Southern", "#003466")
+  , ("Thameslink", "#003466")
+  , ("Virgin Trains", "#003466")
+  , ("Virgin Trains East Coast", "#003466")
+  , ("c2c", "#003466")
+  , ("Tram", "#7EB200")
+  , ("RB1X", "#00A0E2")
+  , ("RB1", "#00A0E2")
+  , ("RB2", "#00A0E2")
+  , ("RB4", "#00A0E2")
+  , ("RB5", "#00A0E2")
+  , ("RB6", "#00A0E2")
+  , ("Elizabeth", "#7156A5")
   ]
 
 setup :: Host -> IO ()
@@ -90,14 +90,14 @@ setup host = do
   void . R.run' h $ routesInfoTable { R.tablePrimaryKey = Just "name" } # R.tableCreate
   void . R.run' h $ messengerSubscriptionsTable { R.tablePrimaryKey = Just "route" } # R.tableCreate
   void . R.run' h $ messengerSubscriptionsTable # R.indexCreate "recipients" (R.! "recipients")
-  writeRoutes host supportedRoutes
+  writeRoutes host routesAndColors
 
 writeRoutes :: Host -> [(T.Text, T.Text)] -> IO ()
 writeRoutes host routes = do
   h <- connect host
   void . R.run' h $ routesInfoTable # R.delete
   void . R.run' h $ routesInfoTable #
-    R.insert (map (\(n, url) -> ["name" R.:= n, "image_url" R.:= url]) routes)
+    R.insert (map (\(n, url) -> ["name" R.:= n, "color" R.:= url]) routes)
 
 writeDisruptions :: Host -> LinesRow -> IO R.WriteResponse
 writeDisruptions host s = do
