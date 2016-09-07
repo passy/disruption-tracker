@@ -98,7 +98,7 @@ writeRoutes host routes = do
   void . R.run' h $ routesInfoTable # R.delete
   void . R.run' h $ routesInfoTable #
     R.insert (map (\(n, url) ->
-      ["name" R.:= T.toLower n, "display_name" R.:= n, "color" R.:= url]) routes)
+      ["name" R.:= T.toLower n, "display" R.:= n, "color" R.:= url]) routes)
 
 writeDisruptions :: Host -> LinesRow -> IO R.WriteResponse
 writeDisruptions host s = do
