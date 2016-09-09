@@ -21,6 +21,7 @@ import qualified Network.Wreq                as Wreq
 import qualified Options.Applicative         as Opt
 import qualified Options.Applicative.Text    as OptT
 import qualified Options.Applicative.Types   as Opt
+import qualified System.IO                   as IO
 
 import           Control.Applicative         (optional, (<**>))
 import           Control.Concurrent          (threadDelay)
@@ -145,7 +146,7 @@ main = do
         liftIO . threadDelay $ seconds * 1000 * 1000
       where
         handler :: forall m. Reader.MonadIO m => E.SomeException -> m ()
-        handler e = liftIO . putStrLn $ "Ignored Error: " <> show e
+        handler e = liftIO . IO.hPutStrLn IO.stderr $ "Ignored Error: " <> show e
 
     runCollect :: OptT
     runCollect = do
