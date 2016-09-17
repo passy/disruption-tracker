@@ -38,6 +38,9 @@ import           Control.Monad.Trans.Control (MonadBaseControl)
 data Verbosity = Normal | Verbose
   deriving (Eq, Show)
 
+data DieOnError = SwallowError | DieOnError
+  deriving (Eq, Show)
+
 data Options = Options
   { optHostname  :: T.Text
   , optPort      :: Integer
@@ -56,7 +59,7 @@ instance Default.Default Options where
     Options "localhost" 28015 Default.def Normal NoOp
 
 data Command = Collect
-             | CollectD Int
+             | CollectD Int DieOnError
              | Setup
              | NoOp
   deriving (Show)
@@ -89,6 +92,10 @@ collectDOptions =
                         <> Opt.help "Interval to check for new disruptions at (seconds)"
                         <> Opt.value 5
                         <> Opt.showDefault )
+           <*> Opt.flag SwallowError DieOnError
+                        ( Opt.long "die-on-error"
+                        <> Opt.short 'e'
+                        <> Opt.help "Exit on error instead of ignoring it" )
 
 command :: Opt.Parser Command
 command =
@@ -134,14 +141,31 @@ main = do
     run = Reader.asks optCommand >>= \case
       Setup -> runSetup
       Collect -> runCollect
-      CollectD interval -> loopIndefinitely interval runCollect
+      CollectD interval SwallowError -> loopIndefinitelySilent interval runCollect
+      CollectD interval DieOnError -> loopIndefinitely interval runCollect
       NoOp -> error "Invalid command."
 
     runSetup :: OptT
     runSetup = Reader.asks host >>= liftIO . Lib.DB.setup
 
-    loopIndefinitely :: forall m. (E.MonadCatch m, Reader.MonadIO m, MonadBaseControl IO m) => Int -> m () -> m ()
+    loopIndefinitely
+      :: forall m.
+         (Reader.MonadIO m, MonadBaseControl IO m)
+      => Int
+      -> m ()
+      -> m ()
     loopIndefinitely seconds fn =
+      forever $ do
+        fn
+        threadDelay $ seconds * 1000 * 1000
+
+    loopIndefinitelySilent
+      :: forall m.
+         (E.MonadCatch m, Reader.MonadIO m, MonadBaseControl IO m)
+      => Int
+      -> m ()
+      -> m ()
+    loopIndefinitelySilent seconds fn =
       forever $ do
         _ <- fork $ worker fn
         threadDelay $ seconds * 1000 * 1000
