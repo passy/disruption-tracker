@@ -24,7 +24,7 @@ import qualified Options.Applicative.Types   as Opt
 import qualified System.IO                   as IO
 
 import           Control.Applicative         (optional, (<**>))
-import           Control.Concurrent          (threadDelay)
+import           Control.Concurrent.Lifted   (threadDelay, fork)
 import           Control.Lens                (mapped, over, traverse, (^.),
                                               (^..), _Just)
 import           Control.Monad               (forever, void)
@@ -33,6 +33,7 @@ import           Data.Monoid                 ((<>))
 import           Data.Version                (Version (), showVersion)
 import           Paths_disruption_tracker    (version)
 import           System.Environment          (getProgName)
+import           Control.Monad.Trans.Control (MonadBaseControl)
 
 data Verbosity = Normal | Verbose
   deriving (Eq, Show)
@@ -139,14 +140,17 @@ main = do
     runSetup :: OptT
     runSetup = Reader.asks host >>= liftIO . Lib.DB.setup
 
-    loopIndefinitely :: forall m a. (Reader.MonadIO m, E.MonadCatch m) => Int -> m a -> m a
+    loopIndefinitely :: forall m. (E.MonadCatch m, Reader.MonadIO m, MonadBaseControl IO m) => Int -> m () -> m ()
     loopIndefinitely seconds fn =
       forever $ do
-        _ <- void fn `E.catchAny` handler
-        liftIO . threadDelay $ seconds * 1000 * 1000
+        _ <- fork $ worker fn
+        threadDelay $ seconds * 1000 * 1000
       where
         handler :: forall m. Reader.MonadIO m => E.SomeException -> m ()
         handler e = liftIO . IO.hPutStrLn IO.stderr $ "Ignored Error: " <> show e
+
+        worker :: forall m a. (Reader.MonadIO m, E.MonadCatch m) => m a -> m ()
+        worker fn' = void fn' `E.catchAny` handler
 
     runCollect :: OptT
     runCollect = do
