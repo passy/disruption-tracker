@@ -25,18 +25,19 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
-    - text
-    - optparse-applicative
-    - bytestring
-    - lens
-    - wreq
-    - transformers
     - aeson
     - aeson-casing
-    - rethinkdb
+    - async
+    - bytestring
     - data-default
     - hourglass
+    - lens
+    - optparse-applicative
+    - rethinkdb
+    - text
     - text-format
+    - transformers
+    - wreq
   exposed-modules:
     - Lib
     - Lib.Citymapper.Types
@@ -80,5 +81,6 @@ executables:
       - lifted-base
       - monad-control
       - safe-exceptions
+      - transformers-base
     other-modules:
       - Paths_disruption_tracker
