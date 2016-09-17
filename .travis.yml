@@ -26,8 +26,8 @@ cache:
 #     addons: {apt: {packages: [libfcgi-dev,libgmp-dev]}}
 matrix:
   include:
-  - env: BUILD=stack ARGS="--resolver nightly"
-    compiler: ": #stack nightly"
+  - env: BUILD=stack ARGS="--resolver nightly-2016-08-25"
+    compiler: ": #stack nightly-2016-08-25"
     addons: {apt: {packages: [libgmp-dev]}}
 
 before_install:
