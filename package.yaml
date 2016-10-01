@@ -33,6 +33,7 @@ library:
     - hourglass
     - lens
     - optparse-applicative
+    - protolude
     - rethinkdb
     - text
     - text-format
@@ -51,9 +52,10 @@ tests:
     dependencies:
       - disruption-tracker
       - aeson
-      - basic-prelude
       - bytestring
+      - protolude
       - containers
+      - filepath
       - directory
       - hourglass
       - hspec

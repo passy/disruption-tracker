@@ -2,27 +2,28 @@
 {-# LANGUAGE NoImplicitPrelude         #-}
 {-# LANGUAGE OverloadedStrings         #-}
 
-import           BasicPrelude
+import           Protolude hiding             (to)
 
 import           Test.Hspec
 import           System.Directory             (getCurrentDirectory)
 import           Test.Hspec.Expectations.Lens (shouldView, through)
 import           Control.Lens                 (to)
+import           System.FilePath              ((</>))
 
 import qualified Data.Aeson                   as Aeson
 import qualified Data.ByteString.Lazy         as BS
 import qualified Data.Text.Encoding           as TE
-import qualified Data.Text.IO                 as TIO
+import qualified Data.Text                    as T
 
 import qualified Fixtures
-import qualified Lib.Citymapper.Types         as Lib
+import qualified Lib.Citymapper.Types as Lib
 
 
 
 readFixture :: FilePath -> IO BS.ByteString
 readFixture path = do
     dir <- getCurrentDirectory
-    BS.fromStrict . TE.encodeUtf8 <$> TIO.readFile (dir </> "test" </> "fixtures" </> path)
+    BS.fromStrict . TE.encodeUtf8 <$> readFile (dir </> "test" </> "fixtures" </> path)
 
 main :: IO ()
 main = hspec .
@@ -30,12 +31,12 @@ main = hspec .
     describe "JSON Parsing" $ do
       it "parses a response" $ do
         resp <- readFixture "routestatus.json"
-        let res = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
+        let res = either error identity (first T.pack $ Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
         res `shouldView` Lib.JSONDateTime Fixtures.lastUpdatedTime `through` Lib.lastUpdatedTime
 
       it "parses a response with a different status" $ do
         resp <- readFixture "routestatus_1.json"
-        let res = either error id (Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
+        let res = either error identity (first T.pack $ Aeson.eitherDecode resp) :: Lib.RouteStatusResponse
         res `shouldView` 8 `through` Lib.groupings . to length
 
       it "serializes to JSON" $ do
