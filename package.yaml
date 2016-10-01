@@ -73,16 +73,17 @@ executables:
       - -Wall
     dependencies:
       - disruption-tracker
-      - optparse-applicative
-      - optparse-text
-      - lens
-      - wreq
       - data-default
-      - mtl
-      - transformers
+      - lens
       - lifted-base
       - monad-control
+      - mtl
+      - optparse-applicative
+      - optparse-text
+      - protolude
       - safe-exceptions
+      - transformers
       - transformers-base
+      - wreq
     other-modules:
       - Paths_disruption_tracker

@@ -4,8 +4,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
 
 module Main where
+
+import           Protolude                   hiding (threadDelay, (<>))
 
 import qualified Control.Exception.Safe      as E
 import qualified Control.Monad.Reader        as Reader
@@ -24,12 +27,12 @@ import qualified Options.Applicative.Types   as Opt
 import qualified System.IO                   as IO
 
 import           Control.Applicative         (optional, (<**>))
-import           Control.Concurrent.Lifted   (threadDelay, fork)
+import           Control.Concurrent.Lifted   (fork, threadDelay)
 import           Control.Lens                (mapped, over, traverse, (^.),
                                               (^..), _Just)
 import           Control.Monad               (forever, void)
-import           Control.Monad.IO.Class      (liftIO)
 import           Data.Monoid                 ((<>))
+import           Control.Monad.IO.Class      (liftIO)
 import           Data.Version                (Version (), showVersion)
 import           Paths_disruption_tracker    (version)
 import           System.Environment          (getProgName)
@@ -105,10 +108,10 @@ command =
   <> Opt.command "collectd" ( Opt.info collectDOptions (Opt.progDesc "Start a continous collection. (Not actually daemonizing.)") ) )
 
 integer :: Opt.ReadM Integer
-integer = either error fst . Read.decimal . T.pack <$> Opt.readerAsk
+integer = either error fst . first T.pack . Read.decimal . T.pack <$> Opt.readerAsk
 
 int :: Opt.ReadM Int
-int = either error fst . Read.decimal . T.pack <$> Opt.readerAsk
+int = either error fst . first T.pack . Read.decimal . T.pack <$> Opt.readerAsk
 
 integerOption :: Opt.Mod Opt.OptionFields Integer -> Opt.Parser Integer
 integerOption = Opt.option integer
@@ -116,14 +119,14 @@ integerOption = Opt.option integer
 intOption :: Opt.Mod Opt.OptionFields Int -> Opt.Parser Int
 intOption = Opt.option int
 
-cliParser :: String -> Version -> Opt.ParserInfo Options
+cliParser :: Text -> Version -> Opt.ParserInfo Options
 cliParser progName ver =
   Opt.info ( Opt.helper <*> options <**> versionInfo )
     ( Opt.fullDesc
    <> Opt.progDesc "Record Tube disruptions"
-   <> Opt.header progName )
+   <> Opt.header (T.unpack progName) )
   where
-    versionInfo = Opt.infoOption ( unwords [progName, showVersion ver] )
+    versionInfo = Opt.infoOption ( T.unpack (T.unwords [progName, T.pack (showVersion ver)]) )
       ( Opt.short 'V'
      <> Opt.long "version"
      <> Opt.hidden
@@ -131,7 +134,7 @@ cliParser progName ver =
 
 main :: IO ()
 main = do
-  progName <- getProgName
+  progName <- T.pack <$> getProgName
   Opt.execParser (cliParser progName version) >>= runOptT run
   where
     host :: Options -> Lib.DB.Host
