@@ -107,11 +107,14 @@ command =
   <> Opt.command "collect" ( Opt.info (pure Collect) (Opt.progDesc "Run a one-time collection.") )
   <> Opt.command "collectd" ( Opt.info collectDOptions (Opt.progDesc "Start a continous collection. (Not actually daemonizing.)") ) )
 
+integral :: Integral a => Opt.ReadM a
+integral = either error fst . first T.pack . Read.decimal . T.pack <$> Opt.readerAsk
+
 integer :: Opt.ReadM Integer
-integer = either error fst . first T.pack . Read.decimal . T.pack <$> Opt.readerAsk
+integer = integral
 
 int :: Opt.ReadM Int
-int = either error fst . first T.pack . Read.decimal . T.pack <$> Opt.readerAsk
+int = integral
 
 integerOption :: Opt.Mod Opt.OptionFields Integer -> Opt.Parser Integer
 integerOption = Opt.option integer
