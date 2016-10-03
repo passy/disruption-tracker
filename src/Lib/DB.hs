@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Lib.DB where
 
@@ -15,7 +16,8 @@ import qualified Lib.Citymapper.Types as C
 
 import Database.RethinkDB (( # ))
 import Control.Monad (void)
-import Control.Lens (over, mapped, (^.), (^..))
+import Control.Lens ((^.), (^..))
+import Data.Time.LocalTime (ZonedTime)
 
 disruptionsTable :: R.Table
 disruptionsTable = R.table "disruptions"
@@ -40,6 +42,14 @@ data LinesRow = LinesRow
   , description :: T.Text
   , level :: Int
   , disruptions :: [C.RouteDisruption]
+  } deriving (Show, Eq, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
+
+data LineLogRow = LineLogRow
+  { name :: T.Text
+  , description :: T.Text
+  , level :: Int
+  , disruptions :: [C.RouteDisruption]
+  , timestamp :: ZonedTime
   } deriving (Show, Eq, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
 
 connect :: Host -> IO R.RethinkDBHandle
@@ -124,18 +134,25 @@ writeRoutes host routes = do
              ["name" R.:= T.toLower n, "display" R.:= n, "color" R.:= color])
          routes)
 
-writeDisruptions :: Host -> C.Route -> IO R.WriteResponse
+writeDisruptions :: Host -> C.Route -> IO ()
 writeDisruptions host route = do
   h <- connect host
-  R.run h $ do
-    R.ex (disruptionsTable # R.insert (toLine route)) [R.conflict R.Replace]
-    -- TODO: Figure out the types for building multi-operation "transactions"
-    --       build a transformation for datetime-based log.
-    R.ex (disruptionLogTable # R.insert (toLine route)) []
+  void $
+    R.run'
+      h
+      [ R.ex (disruptionsTable # R.insert (toLine route)) [R.conflict R.Replace]
+      , disruptionLogTable # R.insert (toLog route)
+      ]
   where
     toLine r =
-          Lib.DB.LinesRow
-            (r ^. C.routeName)
-            (r ^. C.status . C.description)
-            (r ^. C.status . C.statusLevel)
-            (r ^.. C.status . C.disruptions . traverse)
+      LinesRow
+        (r ^. C.routeName)
+        (r ^. C.status . C.description)
+        (r ^. C.status . C.statusLevel)
+        (r ^.. C.status . C.disruptions . traverse)
+    toLog r =
+      LineLogRow
+        (r ^. C.routeName)
+        (r ^. C.status . C.description)
+        (r ^. C.status . C.statusLevel)
+        (r ^.. C.status . C.disruptions . traverse)
