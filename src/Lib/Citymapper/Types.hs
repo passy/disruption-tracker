@@ -11,6 +11,7 @@ import qualified Data.Aeson.Casing as AesonC
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.Hourglass as Hourglass
 import qualified Data.Text as T
+import qualified Data.Time as Time
 import qualified Database.RethinkDB as R
 import qualified GHC.Generics as Generics
 
@@ -71,6 +72,14 @@ instance Aeson.FromJSON JSONDateTime where
   parseJSON (Aeson.String s) =
     JSONDateTime <$> fromDateTimeStr (pure $ T.unpack s)
   parseJSON _ = error "Invalid JSONDateTime"
+
+instance R.ToDatum JSONDateTime where
+  toDatum (JSONDateTime h) = R.Time $ _
+
+instance R.FromDatum JSONDateTime where
+  parseDatum (R.Time z) = return . JSONDateTime $ _
+
+instance R.Expr JSONDateTime
 
 data RouteDisruption = RouteDisruption
   { _disruptionSummary :: T.Text

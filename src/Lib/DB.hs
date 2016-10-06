@@ -45,12 +45,12 @@ data LinesRow = LinesRow
   } deriving (Show, Eq, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
 
 data LineLogRow = LineLogRow
-  { name :: T.Text
+  { timestamp :: C.JSONDateTime
+  , name :: T.Text
   , description :: T.Text
   , level :: Int
-  , timestamp :: ZonedTime
   , disruptions :: [C.RouteDisruption]
-  } deriving (Show, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
+  } deriving (Show, Eq, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
 
 connect :: Host -> IO R.RethinkDBHandle
 connect Host {..} = R.connect (T.unpack hostname) port (T.unpack <$> password)
@@ -134,8 +134,8 @@ writeRoutes host routes = do
              ["name" R.:= T.toLower n, "display" R.:= n, "color" R.:= color])
          routes)
 
-writeDisruptions :: Host -> C.Route -> IO ()
-writeDisruptions host route = do
+writeDisruptions :: Host -> C.JSONDateTime -> C.Route -> IO ()
+writeDisruptions host timestamp route = do
   h <- connect host
   void $
     R.run'
@@ -152,6 +152,7 @@ writeDisruptions host route = do
         (r ^.. C.status . C.disruptions . traverse)
     toLog r =
       LineLogRow
+        timestamp
         (r ^. C.routeName)
         (r ^. C.status . C.description)
         (r ^. C.status . C.statusLevel)

@@ -207,6 +207,8 @@ main = do
           routes =
             resp ^.. Wreq.responseBody . C.groupings . traverse . C.routes . _Just .
             traverse
+      let timestamp :: JSONDateTime
+          timestamp = resp ^. Wreq.responseBody . C.lastUpdatedTime
       let extrLine r =
             Lib.DB.LinesRow
               (r ^. C.routeName)
@@ -215,7 +217,7 @@ main = do
               (r ^.. C.status . C.disruptions . traverse)
       let disruptions = over mapped extrLine routes
       h <- Reader.asks host
-      results <- liftIO . sequence $ Lib.DB.writeDisruptions h <$> disruptions
+      results <- liftIO . sequence $ Lib.DB.writeDisruptions h timestamp <$> disruptions
       printSummary $ Lib.summarizeWriteResponse results
     printSummary :: Maybe TL.Text -> OptT
     printSummary text =
