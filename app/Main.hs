@@ -207,7 +207,7 @@ main = do
           routes =
             resp ^.. Wreq.responseBody . C.groupings . traverse . C.routes . _Just .
             traverse
-      let timestamp :: JSONDateTime
+      let timestamp :: C.JSONDateTime
           timestamp = resp ^. Wreq.responseBody . C.lastUpdatedTime
       let extrLine r =
             Lib.DB.LinesRow

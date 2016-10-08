@@ -17,7 +17,6 @@ import qualified Lib.Citymapper.Types as C
 import Database.RethinkDB (( # ))
 import Control.Monad (void)
 import Control.Lens ((^.), (^..))
-import Data.Time.LocalTime (ZonedTime)
 
 disruptionsTable :: R.Table
 disruptionsTable = R.table "disruptions"
@@ -156,5 +155,4 @@ writeDisruptions host timestamp route = do
         (r ^. C.routeName)
         (r ^. C.status . C.description)
         (r ^. C.status . C.statusLevel)
-        (r ^. C.status . C.timestamp)
         (r ^.. C.status . C.disruptions . traverse)
