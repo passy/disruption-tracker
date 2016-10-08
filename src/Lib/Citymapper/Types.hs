@@ -10,6 +10,7 @@ import qualified Control.Lens.TH as L
 import qualified Data.Aeson.Casing as AesonC
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.Hourglass as Hourglass
+import qualified Data.Hourglass.Compat as HourglassC
 import qualified Data.Text as T
 import qualified Data.Time as Time
 import qualified Database.RethinkDB as R
@@ -73,11 +74,26 @@ instance Aeson.FromJSON JSONDateTime where
     JSONDateTime <$> fromDateTimeStr (pure $ T.unpack s)
   parseJSON _ = error "Invalid JSONDateTime"
 
+timeTranspose :: Time.ZonedTime
+          -> Hourglass.LocalTime Hourglass.DateTime
+timeTranspose oldTime =
+    Hourglass.localTime
+        offsetTime
+        (Hourglass.DateTime newDate timeofday)
+  where
+    newDate :: Hourglass.Date
+    newDate = HourglassC.dateFromTAIEpoch $ Time.toModifiedJulianDay $ Time.localDay $ Time.zonedTimeToLocalTime oldTime
+
+    timeofday :: Hourglass.TimeOfDay
+    timeofday = HourglassC.diffTimeToTimeOfDay $ Time.timeOfDayToTime $ Time.localTimeOfDay $ Time.zonedTimeToLocalTime oldTime
+
+    offsetTime = Hourglass.TimezoneOffset $ fromIntegral $ Time.timeZoneMinutes $ Time.zonedTimeZone oldTime
+
 instance R.ToDatum JSONDateTime where
-  toDatum (JSONDateTime h) = R.Time $ _
+  toDatum (JSONDateTime h) = R.Time $ Time.ZonedTime _ _
 
 instance R.FromDatum JSONDateTime where
-  parseDatum (R.Time z) = return . JSONDateTime $ _
+  parseDatum (R.Time z) = return . JSONDateTime $ Hourglass.localTimeUnwrap $ timeTranspose z
 
 instance R.Expr JSONDateTime
 
