@@ -90,21 +90,26 @@ timeTranspose oldTime =
     offsetTime = Hourglass.TimezoneOffset $ fromIntegral $ Time.timeZoneMinutes $ Time.zonedTimeZone oldTime
 
 instance R.ToDatum JSONDateTime where
-  toDatum (JSONDateTime h) = R.Time $ Time.ZonedTime localTime timeZone
+  toDatum (JSONDateTime h) = R.Time $ Time.ZonedTime localTime Time.utc
     where
-    hdate :: Hourglass.Date
-    hdate = Hourglass.timeGetDate h
-    day :: Time.Day
-    day = Time.fromGregorian (fromIntegral $ Hourglass.dateYear hdate) (fromEnum $ Hourglass.dateMonth hdate) (Hourglass.dateDay hdate)
-    htime :: Hourglass.TimeOfDay
-    htime = Hourglass.timeGetTimeOfDay h
-    ttime :: Time.TimeOfDay
-    ttime = Time.TimeOfDay (fromEnum $ Hourglass.todHour htime) (fromEnum $ Hourglass.todMin htime) (fromIntegral $ fromEnum $ Hourglass.todSec htime)
-    localTime :: Time.LocalTime
-    localTime = Time.LocalTime day ttime
-    -- Well, this is just plain wrong.
-    timeZone :: Time.TimeZone
-    timeZone = Time.utc
+      hdate :: Hourglass.Date
+      hdate = Hourglass.timeGetDate h
+      day :: Time.Day
+      day =
+        Time.fromGregorian
+          (fromIntegral $ Hourglass.dateYear hdate)
+          (fromEnum $ Hourglass.dateMonth hdate)
+          (Hourglass.dateDay hdate)
+      htime :: Hourglass.TimeOfDay
+      htime = Hourglass.timeGetTimeOfDay h
+      ttime :: Time.TimeOfDay
+      ttime =
+        Time.TimeOfDay
+          (fromEnum $ Hourglass.todHour htime)
+          (fromEnum $ Hourglass.todMin htime)
+          (fromIntegral $ fromEnum $ Hourglass.todSec htime)
+      localTime :: Time.LocalTime
+      localTime = Time.LocalTime day ttime
 
 instance R.FromDatum JSONDateTime where
   parseDatum (R.Time z) = return . JSONDateTime $ Hourglass.localTimeUnwrap $ timeTranspose z
