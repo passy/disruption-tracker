@@ -28,7 +28,7 @@ import qualified System.IO as IO
 
 import Control.Applicative (optional, (<**>))
 import Control.Concurrent.Lifted (fork, threadDelay)
-import Control.Lens (mapped, over, traverse, (^.), (^..), _Just)
+import Control.Lens (traverse, (^.), (^..), _Just)
 import Control.Monad (forever, void)
 import Data.Monoid ((<>))
 import Control.Monad.IO.Class (liftIO)
