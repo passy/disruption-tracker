@@ -1,10 +1,14 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Lib.Citymapper.Types where
+
+import Protolude
 
 import qualified Control.Lens.TH as L
 import qualified Data.Aeson.Casing as AesonC
@@ -17,8 +21,9 @@ import qualified Database.RethinkDB as R
 import qualified GHC.Generics as Generics
 
 import Control.Applicative (empty, (<*>))
-import Control.Monad (MonadPlus(), mzero)
+import Control.Monad (MonadPlus(), mzero, fail)
 import Data.Aeson ((.:), (.:?), (.!=))
+import Data.String (String)
 
 maybeParse
   :: MonadPlus m
@@ -60,6 +65,54 @@ genericToJSON modifier =
     { Aeson.fieldLabelModifier = modifier
     }
 
+data DisruptionLevel
+  = GoodService
+  | MinorDelays
+  | SevereDelays
+  | PartSuspended
+  | UnknownLevel Int
+  deriving (Show, Eq, Ord)
+
+instance R.ToDatum DisruptionLevel where
+  toDatum = R.Number . fromIntegral . disruptionLevelToInt
+
+instance R.FromDatum DisruptionLevel where
+  parseDatum (R.Number n) = pure . intToDisruptionLevel $ floor n
+  parseDatum _ = fail "Unsupport Datum type"
+
+instance R.Expr DisruptionLevel
+
+instance Aeson.FromJSON DisruptionLevel where
+  parseJSON (Aeson.Number i) = pure . intToDisruptionLevel $ floor i
+  parseJSON _ = fail "Unsupported disruption level JSON type"
+
+instance Aeson.ToJSON DisruptionLevel where
+  toJSON = Aeson.Number . fromIntegral . disruptionLevelToInt
+
+intToDisruptionLevel :: Int -> DisruptionLevel
+intToDisruptionLevel = \case
+  0 -> GoodService
+  1 -> MinorDelays
+  2 -> SevereDelays
+  3 -> PartSuspended
+  i -> UnknownLevel i
+
+disruptionLevelToInt :: DisruptionLevel -> Int
+disruptionLevelToInt = \case
+  GoodService -> 0
+  MinorDelays -> 1
+  SevereDelays -> 2
+  PartSuspended -> 3
+  UnknownLevel i -> i
+
+showDisruptionLevel :: DisruptionLevel -> String
+showDisruptionLevel = \case
+  GoodService -> "Good Service"
+  MinorDelays -> "Minor Delays"
+  SevereDelays -> "Severe Delays"
+  PartSuspended -> "Part Suspended"
+  UnknownLevel i -> "Unknown Status " <> show i
+
 newtype JSONDateTime =
   JSONDateTime Hourglass.DateTime
   deriving (Show, Eq)
@@ -72,7 +125,7 @@ instance Aeson.ToJSON JSONDateTime where
 instance Aeson.FromJSON JSONDateTime where
   parseJSON (Aeson.String s) =
     JSONDateTime <$> fromDateTimeStr (pure $ T.unpack s)
-  parseJSON _ = error "Invalid JSONDateTime"
+  parseJSON _ = fail "Invalid JSONDateTime"
 
 timeTranspose :: Time.ZonedTime
           -> Hourglass.LocalTime Hourglass.DateTime
@@ -113,14 +166,14 @@ instance R.ToDatum JSONDateTime where
 
 instance R.FromDatum JSONDateTime where
   parseDatum (R.Time z) = return . JSONDateTime $ Hourglass.localTimeUnwrap $ timeTranspose z
-  parseDatum _ = error "Unsupported datum"
+  parseDatum _ = fail "Unsupported datum"
 
 instance R.Expr JSONDateTime
 
 data RouteDisruption = RouteDisruption
   { _disruptionSummary :: T.Text
   , _stops :: Maybe [T.Text]
-  , _disruptionLevel :: Int
+  , _disruptionLevel :: DisruptionLevel
   } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
 
 routeDisruptionNameModifier :: String -> String
