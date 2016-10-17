@@ -22,7 +22,7 @@ import qualified Lib.Citymapper.Types as C
 import qualified Lib.DB
 import qualified Network.Wreq as Wreq
 import qualified Options.Applicative as Opt
-import qualified Options.Applicative.Text as OptT
+import qualified Options.Applicative.Text as Opt
 import qualified Options.Applicative.Types as Opt
 import qualified System.IO as IO
 
@@ -74,7 +74,7 @@ data Command
 options :: Opt.Parser Options
 options =
   Options <$>
-  OptT.textOption
+  Opt.textOption
     (Opt.long "hostname" <> Opt.short 'h' <> Opt.help "RethinkDB hostname" <>
      Opt.value (optHostname Default.def) <>
      Opt.showDefault) <*>
@@ -83,7 +83,7 @@ options =
      Opt.value (optPort Default.def) <>
      Opt.showDefault) <*>
   optional
-    (OptT.textOption
+    (Opt.textOption
        (Opt.long "password" <> Opt.short 'w' <> Opt.help "RethinkDB password")) <*>
   Opt.flag
     Normal

@@ -39,7 +39,7 @@ data Host = Host
 data LinesRow = LinesRow
   { name :: T.Text
   , description :: T.Text
-  , level :: Int
+  , level :: C.DisruptionLevel
   , disruptions :: [C.RouteDisruption]
   } deriving (Show, Eq, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
 
@@ -47,7 +47,7 @@ data LineLogRow = LineLogRow
   { timestamp :: C.JSONDateTime
   , name :: T.Text
   , description :: T.Text
-  , level :: Int
+  , level :: C.DisruptionLevel
   , disruptions :: [C.RouteDisruption]
   } deriving (Show, Eq, Generics.Generic, Aeson.FromJSON, Aeson.ToJSON, R.FromDatum, R.ToDatum, R.Expr)
 
