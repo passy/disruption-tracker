@@ -37,6 +37,7 @@ library:
     - rethinkdb
     - text
     - text-format
+    - time
     - transformers
     - wreq
   exposed-modules:

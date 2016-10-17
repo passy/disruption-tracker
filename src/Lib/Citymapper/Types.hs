@@ -10,7 +10,9 @@ import qualified Control.Lens.TH as L
 import qualified Data.Aeson.Casing as AesonC
 import qualified Data.Aeson.Types as Aeson
 import qualified Data.Hourglass as Hourglass
+import qualified Data.Hourglass.Compat as HourglassC
 import qualified Data.Text as T
+import qualified Data.Time as Time
 import qualified Database.RethinkDB as R
 import qualified GHC.Generics as Generics
 
@@ -71,6 +73,49 @@ instance Aeson.FromJSON JSONDateTime where
   parseJSON (Aeson.String s) =
     JSONDateTime <$> fromDateTimeStr (pure $ T.unpack s)
   parseJSON _ = error "Invalid JSONDateTime"
+
+timeTranspose :: Time.ZonedTime
+          -> Hourglass.LocalTime Hourglass.DateTime
+timeTranspose oldTime =
+    Hourglass.localTime
+        offsetTime
+        (Hourglass.DateTime newDate timeofday)
+  where
+    newDate :: Hourglass.Date
+    newDate = HourglassC.dateFromTAIEpoch $ Time.toModifiedJulianDay $ Time.localDay $ Time.zonedTimeToLocalTime oldTime
+
+    timeofday :: Hourglass.TimeOfDay
+    timeofday = HourglassC.diffTimeToTimeOfDay $ Time.timeOfDayToTime $ Time.localTimeOfDay $ Time.zonedTimeToLocalTime oldTime
+
+    offsetTime = Hourglass.TimezoneOffset $ fromIntegral $ Time.timeZoneMinutes $ Time.zonedTimeZone oldTime
+
+instance R.ToDatum JSONDateTime where
+  toDatum (JSONDateTime h) = R.Time $ Time.ZonedTime localTime Time.utc
+    where
+      hdate :: Hourglass.Date
+      hdate = Hourglass.timeGetDate h
+      day :: Time.Day
+      day =
+        Time.fromGregorian
+          (fromIntegral $ Hourglass.dateYear hdate)
+          (fromEnum $ Hourglass.dateMonth hdate)
+          (Hourglass.dateDay hdate)
+      htime :: Hourglass.TimeOfDay
+      htime = Hourglass.timeGetTimeOfDay h
+      ttime :: Time.TimeOfDay
+      ttime =
+        Time.TimeOfDay
+          (fromEnum $ Hourglass.todHour htime)
+          (fromEnum $ Hourglass.todMin htime)
+          (fromIntegral $ fromEnum $ Hourglass.todSec htime)
+      localTime :: Time.LocalTime
+      localTime = Time.LocalTime day ttime
+
+instance R.FromDatum JSONDateTime where
+  parseDatum (R.Time z) = return . JSONDateTime $ Hourglass.localTimeUnwrap $ timeTranspose z
+  parseDatum _ = error "Unsupported datum"
+
+instance R.Expr JSONDateTime
 
 data RouteDisruption = RouteDisruption
   { _disruptionSummary :: T.Text

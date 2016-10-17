@@ -28,7 +28,7 @@ import qualified System.IO as IO
 
 import Control.Applicative (optional, (<**>))
 import Control.Concurrent.Lifted (fork, threadDelay)
-import Control.Lens (mapped, over, traverse, (^.), (^..), _Just)
+import Control.Lens (traverse, (^.), (^..), _Just)
 import Control.Monad (forever, void)
 import Data.Monoid ((<>))
 import Control.Monad.IO.Class (liftIO)
@@ -207,15 +207,10 @@ main = do
           routes =
             resp ^.. Wreq.responseBody . C.groupings . traverse . C.routes . _Just .
             traverse
-      let extrLine r =
-            Lib.DB.LinesRow
-              (r ^. C.routeName)
-              (r ^. C.status . C.description)
-              (r ^. C.status . C.statusLevel)
-              (r ^.. C.status . C.disruptions . traverse)
-      let disruptions = over mapped extrLine routes
+      let timestamp :: C.JSONDateTime
+          timestamp = resp ^. Wreq.responseBody . C.lastUpdatedTime
       h <- Reader.asks host
-      results <- liftIO . sequence $ Lib.DB.writeDisruptions h <$> disruptions
+      results <- liftIO . sequence $ Lib.DB.writeDisruptions h timestamp <$> routes
       printSummary $ Lib.summarizeWriteResponse results
     printSummary :: Maybe TL.Text -> OptT
     printSummary text =
