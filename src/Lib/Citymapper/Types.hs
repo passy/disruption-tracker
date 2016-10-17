@@ -193,16 +193,16 @@ $(L.makeFields ''RouteDisruption)
 data RouteStatus = RouteStatus
   { _statusSummary :: T.Text
   , _description :: T.Text
-  , _statusLevel :: Int
+  , _statusLevel :: DisruptionLevel
   , _disruptions :: [RouteDisruption]
   } deriving (Show, Eq, Generics.Generic, R.FromDatum, R.ToDatum, R.Expr)
 
 defRouteStatus :: RouteStatus
 defRouteStatus =
   RouteStatus
-  { _statusSummary = "Unknown status."
+  { _statusSummary = "Unknown Status"
   , _description = "The status of this line is currently unknown."
-  , _statusLevel = 0
+  , _statusLevel = UnknownLevel 0
   , _disruptions = []
   }
 
