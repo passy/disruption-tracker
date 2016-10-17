@@ -90,28 +90,31 @@ instance Aeson.ToJSON DisruptionLevel where
   toJSON = Aeson.Number . fromIntegral . disruptionLevelToInt
 
 intToDisruptionLevel :: Int -> DisruptionLevel
-intToDisruptionLevel = \case
-  0 -> GoodService
-  1 -> MinorDelays
-  2 -> SevereDelays
-  3 -> PartSuspended
-  i -> UnknownLevel i
+intToDisruptionLevel =
+  \case
+    0 -> GoodService
+    1 -> MinorDelays
+    2 -> SevereDelays
+    3 -> PartSuspended
+    i -> UnknownLevel i
 
 disruptionLevelToInt :: DisruptionLevel -> Int
-disruptionLevelToInt = \case
-  GoodService -> 0
-  MinorDelays -> 1
-  SevereDelays -> 2
-  PartSuspended -> 3
-  UnknownLevel i -> i
+disruptionLevelToInt =
+  \case
+    GoodService -> 0
+    MinorDelays -> 1
+    SevereDelays -> 2
+    PartSuspended -> 3
+    UnknownLevel i -> i
 
 showDisruptionLevel :: DisruptionLevel -> String
-showDisruptionLevel = \case
-  GoodService -> "Good Service"
-  MinorDelays -> "Minor Delays"
-  SevereDelays -> "Severe Delays"
-  PartSuspended -> "Part Suspended"
-  UnknownLevel i -> "Unknown Status " <> show i
+showDisruptionLevel =
+  \case
+    GoodService -> "Good Service"
+    MinorDelays -> "Minor Delays"
+    SevereDelays -> "Severe Delays"
+    PartSuspended -> "Part Suspended"
+    UnknownLevel i -> "Unknown Status " <> show i
 
 newtype JSONDateTime =
   JSONDateTime Hourglass.DateTime
@@ -127,20 +130,21 @@ instance Aeson.FromJSON JSONDateTime where
     JSONDateTime <$> fromDateTimeStr (pure $ T.unpack s)
   parseJSON _ = fail "Invalid JSONDateTime"
 
-timeTranspose :: Time.ZonedTime
-          -> Hourglass.LocalTime Hourglass.DateTime
+timeTranspose :: Time.ZonedTime -> Hourglass.LocalTime Hourglass.DateTime
 timeTranspose oldTime =
-    Hourglass.localTime
-        offsetTime
-        (Hourglass.DateTime newDate timeofday)
+  Hourglass.localTime offsetTime (Hourglass.DateTime newDate timeofday)
   where
     newDate :: Hourglass.Date
-    newDate = HourglassC.dateFromTAIEpoch $ Time.toModifiedJulianDay $ Time.localDay $ Time.zonedTimeToLocalTime oldTime
-
+    newDate =
+      HourglassC.dateFromTAIEpoch $
+      Time.toModifiedJulianDay $ Time.localDay $ Time.zonedTimeToLocalTime oldTime
     timeofday :: Hourglass.TimeOfDay
-    timeofday = HourglassC.diffTimeToTimeOfDay $ Time.timeOfDayToTime $ Time.localTimeOfDay $ Time.zonedTimeToLocalTime oldTime
-
-    offsetTime = Hourglass.TimezoneOffset $ fromIntegral $ Time.timeZoneMinutes $ Time.zonedTimeZone oldTime
+    timeofday =
+      HourglassC.diffTimeToTimeOfDay $
+      Time.timeOfDayToTime $ Time.localTimeOfDay $ Time.zonedTimeToLocalTime oldTime
+    offsetTime =
+      Hourglass.TimezoneOffset $
+      fromIntegral $ Time.timeZoneMinutes $ Time.zonedTimeZone oldTime
 
 instance R.ToDatum JSONDateTime where
   toDatum (JSONDateTime h) = R.Time $ Time.ZonedTime localTime Time.utc
@@ -165,7 +169,8 @@ instance R.ToDatum JSONDateTime where
       localTime = Time.LocalTime day ttime
 
 instance R.FromDatum JSONDateTime where
-  parseDatum (R.Time z) = return . JSONDateTime $ Hourglass.localTimeUnwrap $ timeTranspose z
+  parseDatum (R.Time z) =
+    return . JSONDateTime $ Hourglass.localTimeUnwrap $ timeTranspose z
   parseDatum _ = fail "Unsupported datum"
 
 instance R.Expr JSONDateTime
