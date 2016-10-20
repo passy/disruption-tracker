@@ -222,8 +222,10 @@ instance Aeson.FromJSON RouteStatus where
     Aeson.withObject "status" $ \o -> do
       _statusSummary <- o .: "summary"
       _description <- o .: "description"
-      _statusLevel <- o .: "level"
       _disruptions <- o .: "disruptions"
+      _statusLevel <- if T.toLower _statusSummary `T.isInfixOf` "unknown"
+        then pure $ UnknownLevel 0
+        else o .: "level"
       pure RouteStatus{..}
 
 instance Aeson.ToJSON RouteStatus where
