@@ -31,10 +31,16 @@ Initialize some tables, keys and indices.
 $ stack exec disruption-tracker -- --hostname 192.168.99.100 --port 32769 setup
 ```
 
-If this fails, please manually drop the table for now so we can recreate it:
+If this fails, please manually drop the db for now so we can recreate it:
 
 ```javascript
-r.db('test').tableDrop('disruptions')
+r.dbDrop('test');
+r.dbCreate('test');
+```
+
+Set up the RethinkDB before?
+```
+$ docker start rethink1
 ```
 
 ## Deployment
