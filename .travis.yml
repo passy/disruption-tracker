@@ -77,6 +77,7 @@ script:
     stack)
       stack --no-terminal $ARGS test --haddock --no-haddock-deps
       stack --no-terminal $ARGS install
+      tar -cjvf disruption-tracker.lnx64.tar.bz2 -C /home/travis/.local/bin/ disruption-tracker
       ;;
     cabal)
       cabal configure --enable-tests --enable-benchmarks -v2 --ghc-options="-O0 -Werror"
@@ -89,7 +90,6 @@ script:
         (cd dist && cabal install --force-reinstalls "$SRC_TGZ")
       ;;
   esac
-- tar -cjvf disruption-tracker.lnx64.tar.bz2 -C /home/travis/.local/bin/ disruption-tracker
 
 deploy:
   provider: releases
