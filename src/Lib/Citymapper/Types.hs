@@ -5,6 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Lib.Citymapper.Types where
 
@@ -218,11 +219,14 @@ routeStatusNameModifier s = defaultModifier s
 
 instance Aeson.FromJSON RouteStatus where
   parseJSON =
-    Aeson.withObject "status" $
-    \o ->
-       RouteStatus <$> o .: "summary" <*> o .: "description" .!= mempty <*>
-       o .: "level" <*>
-       o .: "disruptions"
+    Aeson.withObject "status" $ \o -> do
+      _statusSummary <- o .: "summary"
+      _description <- o .: "description"
+      _disruptions <- o .: "disruptions"
+      _statusLevel <- if T.toLower _statusSummary `T.isInfixOf` "unknown"
+        then pure $ UnknownLevel 0
+        else o .: "level"
+      pure RouteStatus{..}
 
 instance Aeson.ToJSON RouteStatus where
   toEncoding = genericToEncoding routeStatusNameModifier
