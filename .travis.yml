@@ -75,8 +75,8 @@ script:
 - |
   case "$BUILD" in
     stack)
-      stack --no-terminal $ARGS test --haddock --no-haddock-deps
-      stack --no-terminal $ARGS install
+      stack --no-terminal $ARGS test --haddock --no-haddock-deps && \
+      stack --no-terminal $ARGS install && \
       tar -cjvf disruption-tracker.lnx64.tar.bz2 -C /home/travis/.local/bin/ disruption-tracker
       ;;
     cabal)
