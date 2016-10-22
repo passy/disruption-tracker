@@ -43,15 +43,15 @@ main =
                 Lib.RouteDisruption
                 { Lib._disruptionSummary = "Something bad"
                 , Lib._stops = Nothing
-                , Lib._disruptionLevel = 3
+                , Lib._disruptionLevel = Lib.SevereDelays
                 }
           let s =
                 Lib.RouteStatus
                 { Lib._statusSummary = "It's down."
                 , Lib._description = "I mean, it's real bad."
-                , Lib._statusLevel = 3
+                , Lib._statusLevel = Lib.PartSuspended
                 , Lib._disruptions = [d]
                 }
           let str = Aeson.encode s
           str `shouldBe`
-            "{\"summary\":\"It's down.\",\"description\":\"I mean, it's real bad.\",\"level\":3,\"disruptions\":[{\"summary\":\"Something bad\",\"stops\":null,\"level\":3}]}"
+            "{\"summary\":\"It's down.\",\"description\":\"I mean, it's real bad.\",\"level\":2,\"disruptions\":[{\"summary\":\"Something bad\",\"stops\":null,\"level\":3}]}"
