@@ -54,4 +54,4 @@ main =
                 }
           let str = Aeson.encode s
           str `shouldBe`
-            "{\"summary\":\"It's down.\",\"description\":\"I mean, it's real bad.\",\"level\":2,\"disruptions\":[{\"summary\":\"Something bad\",\"stops\":null,\"level\":3}]}"
+            "{\"summary\":\"It's down.\",\"description\":\"I mean, it's real bad.\",\"level\":3,\"disruptions\":[{\"summary\":\"Something bad\",\"stops\":null,\"level\":2}]}"
