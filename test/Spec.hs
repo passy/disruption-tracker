@@ -26,7 +26,7 @@ readFixture path = do
 
 main :: IO ()
 main =
-  hspec . describe "Disruption Tracker" . describe "JSON Parsing" $
+  hspec . describe "Disruption Tracker" . describe "JSON Parsing" . parallel $
   do it "parses a response" $
        do resp <- readFixture "routestatus.json"
           let res =
