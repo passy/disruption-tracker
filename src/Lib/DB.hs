@@ -136,9 +136,8 @@ writeRoutes host routes = do
 writeDisruptions :: Host -> C.JSONDateTime -> C.Route -> IO R.WriteResponse
 writeDisruptions host timestamp route = do
   h <- connect host
-  R.run h [ R.ex (disruptionsTable # R.insert (toLine route)) [R.conflict R.Replace]
-          , disruptionLogTable # R.insert (toLog route)
-          ]
+  _ <- R.run' h $ disruptionLogTable # R.insert (toLog route)
+  R.run h $ R.ex (disruptionsTable # R.insert (toLine route)) [R.conflict R.Replace]
   where
     toLine r =
       LinesRow
