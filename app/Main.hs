@@ -207,10 +207,12 @@ main = do
           routes =
             resp ^.. Wreq.responseBody . C.groupings . traverse . C.routes . _Just .
             traverse
+      -- TODO: Find a lens expression for this.
+      let filteredRoutes = filter (\r -> r ^. C.status . C.statusLevel /= C.UnknownLevel 0) routes
       let timestamp :: C.JSONDateTime
           timestamp = resp ^. Wreq.responseBody . C.lastUpdatedTime
       h <- Reader.asks host
-      results <- liftIO . sequence $ Lib.DB.writeDisruptions h timestamp <$> routes
+      results <- liftIO . sequence $ Lib.DB.writeDisruptions h timestamp <$> filteredRoutes
       printSummary $ Lib.summarizeWriteResponse results
     printSummary :: Maybe TL.Text -> OptT
     printSummary text =
