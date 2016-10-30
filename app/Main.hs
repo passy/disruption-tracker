@@ -154,13 +154,43 @@ cliParser progName ver =
         (Opt.short 'V' <> Opt.long "version" <> Opt.hidden <>
          Opt.help "Show version information")
 
+host :: Options -> Lib.DB.Host
+host opts = Lib.DB.Host (optHostname opts) (optPort opts) (optPassword opts)
+
+runSetup :: OptT
+runSetup = Reader.asks host >>= liftIO . Lib.DB.setup
+
+runCollect :: OptT
+runCollect = do
+  resp <- liftIO $ Wreq.asJSON =<< Wreq.get (T.unpack Lib.disruptionUrl)
+  let routes :: [C.Route]
+      routes =
+        resp ^.. Wreq.responseBody . C.groupings . traverse . C.routes . _Just .
+        traverse
+  -- TODO: Find a lens expression for this.
+  let filteredRoutes =
+        filter (\r -> r ^. C.status . C.statusLevel /= C.UnknownLevel 0) routes
+  let timestamp :: C.JSONDateTime
+      timestamp = resp ^. Wreq.responseBody . C.lastUpdatedTime
+  h <- Reader.asks host
+  results <- liftIO . sequence $ Lib.DB.writeDisruptions h timestamp <$> filteredRoutes
+  printSummary $ Lib.summarizeWriteResponse results
+
+printSummary :: Maybe TL.Text -> OptT
+printSummary text =
+  Reader.asks optVerbosity >>=
+  \v ->
+      liftIO $
+      case (v, text) of
+        (Normal, Nothing) -> pure ()
+        (Verbose, Nothing) -> TLIO.putStrLn "No changes."
+        (_, Just t) -> TLIO.putStrLn t
+
 main :: IO ()
 main = do
   progName <- T.pack <$> getProgName
   Opt.execParser (cliParser progName version) >>= runOptT run
   where
-    host :: Options -> Lib.DB.Host
-    host opts = Lib.DB.Host (optHostname opts) (optPort opts) (optPassword opts)
     run :: OptT
     run =
       Reader.asks optCommand >>=
@@ -170,8 +200,6 @@ main = do
         CollectD interval SwallowError -> loopIndefinitelySilent interval runCollect
         CollectD interval DieOnError -> loopIndefinitely interval runCollect
         NoOp -> error "Invalid command."
-    runSetup :: OptT
-    runSetup = Reader.asks host >>= liftIO . Lib.DB.setup
     loopIndefinitely
       :: forall m.
          (Reader.MonadIO m, MonadBaseControl IO m)
@@ -200,27 +228,3 @@ main = do
              (Reader.MonadIO m, E.MonadCatch m)
           => m a -> m ()
         worker fn' = void fn' `E.catchAny` handler
-    runCollect :: OptT
-    runCollect = do
-      resp <- liftIO $ Wreq.asJSON =<< Wreq.get (T.unpack Lib.disruptionUrl)
-      let routes :: [C.Route]
-          routes =
-            resp ^.. Wreq.responseBody . C.groupings . traverse . C.routes . _Just .
-            traverse
-      -- TODO: Find a lens expression for this.
-      let filteredRoutes =
-            filter (\r -> r ^. C.status . C.statusLevel /= C.UnknownLevel 0) routes
-      let timestamp :: C.JSONDateTime
-          timestamp = resp ^. Wreq.responseBody . C.lastUpdatedTime
-      h <- Reader.asks host
-      results <- liftIO . sequence $ Lib.DB.writeDisruptions h timestamp <$> filteredRoutes
-      printSummary $ Lib.summarizeWriteResponse results
-    printSummary :: Maybe TL.Text -> OptT
-    printSummary text =
-      Reader.asks optVerbosity >>=
-      \v ->
-         liftIO $
-         case (v, text) of
-           (Normal, Nothing) -> pure ()
-           (Verbose, Nothing) -> TLIO.putStrLn "No changes."
-           (_, Just t) -> TLIO.putStrLn t
