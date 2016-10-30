@@ -208,7 +208,8 @@ main = do
             resp ^.. Wreq.responseBody . C.groupings . traverse . C.routes . _Just .
             traverse
       -- TODO: Find a lens expression for this.
-      let filteredRoutes = filter (\r -> r ^. C.status . C.statusLevel /= C.UnknownLevel 0) routes
+      let filteredRoutes =
+            filter (\r -> r ^. C.status . C.statusLevel /= C.UnknownLevel 0) routes
       let timestamp :: C.JSONDateTime
           timestamp = resp ^. Wreq.responseBody . C.lastUpdatedTime
       h <- Reader.asks host
